@@ -1,5 +1,14 @@
 # white-deer-check-in
-
+已完成登录注册界面（差扫码登陆）
+手机快捷登录：![image](https://github.com/user-attachments/assets/95543ab7-e671-4a29-92e4-2fe18b0c5c79)
+账号密码登录：![image](https://github.com/user-attachments/assets/266fb196-d85c-4bc7-8e9d-180e62d79d20)
+注册：![image](https://github.com/user-attachments/assets/6ed885cf-d345-47bc-8eb0-59a4cf54a0bf)
+用户打卡界面，打卡任务卡片未完成!![image](https://github.com/user-attachments/assets/c13e779f-9b21-4893-b2ce-fcd079ce29ee)
+加入团队界面以及创建团队已完成，待完成得到数据后的渲染![image](https://github.com/user-attachments/assets/7bb0db23-b84d-4478-a372-c3f620c163e5)
+我的团队界面已完成，待渲染（也是仅展示数据很简单）![image](https://github.com/user-attachments/assets/2175c329-18eb-4405-8dde-9ad71d4996d0)
+个人信息已完成![image](https://github.com/user-attachments/assets/2b0c7b3b-164e-45b5-aad8-babdde74778f)
+待完成退出登录按钮
+待完成打卡操作卡片（人脸拍照与上传已完成）此图借修改照片展示人脸拍照与上传![image](https://github.com/user-attachments/assets/8722ee0c-26b3-48de-9ee3-fd868a10d3da)
 ## Project setup
 ```
 npm install
