@@ -35,25 +35,25 @@
         </span>
       </el-dialog>
     </div>
-    <el-table :data="teams" border>
-      <el-table-column prop="teamId" label="团队编号"></el-table-column>
-      <el-table-column prop="teamName" label="团队名称"></el-table-column>
-      <el-table-column prop="isFull" label="是否满员"></el-table-column>
+    <el-table :data="filteredTeams" border>
+      <el-table-column prop="teamId" label="团队编号" width="80"></el-table-column>
+      <el-table-column prop="teamName" label="团队名称" width="200"></el-table-column>
+      <el-table-column prop="isFull" label="是否满员" width="80"></el-table-column>
       <el-table-column prop="memberCount" label="人数"></el-table-column>
-      <el-table-column prop="createTime" label="创建时间"></el-table-column>
+      <el-table-column prop="createTime" label="创建时间" width="200"></el-table-column>
       <el-table-column label="操作">
         <template slot-scope="scope">
           <el-button type="text" @click="joinTeam(scope.row)">加入</el-button>
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination
-      :total="totalCount"
-      :page-size="pageSize"
-      :current-page="currentPage"
-      @current-change="handlePageChange"
-    >
-    </el-pagination>
+    <div class="pagination-container">
+      <el-button @click="prevPage" :disabled="currentPage === 1">上一页</el-button>
+      <span>{{ currentPage }}</span> /
+      <span>{{ totalPages }}</span>
+      <el-button @click="nextPage" :disabled="currentPage === totalPages">下一页</el-button>
+    </div>
+    
   </div>
 </template>
 
@@ -67,33 +67,183 @@ export default {
       teamName: '',
       startDate: '',
       endDate: '',
-      teams: [],
+      teams: [
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:2,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:3,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+        {
+          teamId:1,
+          teamName:'茧之泪殇',
+          isFull:"否",
+          memberCount:'123',
+          createTime:'2024-10-01 09:15:00'
+        },
+      ],
+
       totalCount: 0,
-      pageSize: 10,
+      pageSize: 6,
       currentPage: 1,
-      createTeamParameter:{
-        createTeamDialogVisible:false,
-        teamName:'',
-        teamNumberMaximum:1,
-        teamIntroduction:''
+      createTeamParameter: {
+        createTeamDialogVisible: false,
+        teamName: '',
+        teamNumberMaximum: 1,
+        teamIntroduction: ''
       }
     };
   },
   methods: {
+    prevPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
     async searchTeams() {
       try {
-        const response = await axios.get('/api/search-teams', {
+        const response = await axios.get('/api/searchteams', {
           params: {
-            teamId: this.teamId,
-            teamName: this.teamName,
-            startDate: this.startDate,
-            endDate: this.endDate,
-            page: this.currentPage,
-            size: this.pageSize,
+            id:this.teamId,
+            name:this.teamName,
+            begin:this.startDate,
+            end:this.endDate
           },
         });
         this.teams = response.data.teams;
-        this.totalCount = response.data.totalCount;
+        // 这里无需额外操作，因为 computed 会自动重新计算
       } catch (error) {
         console.error('查询团队失败', error);
       }
@@ -107,37 +257,97 @@ export default {
       this.searchTeams();
     },
     joinTeam(row) {
-      console.log(`加入团队 ${row.teamName}`);
-      // 这里后续补充加入团队的实际逻辑，如发送请求到后端等
+      this.$confirm('是否确定加入团队'+row.teamName, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(async () => {
+          try {
+            const id = this.$store.getters.getid;
+            const teamid = row.teamId;
+            const response = await axios.post('/api/jointeam', {
+              "id":id,
+              "teamid":teamid
+            });
+            //待完善
+            if(response.data){
+              this.$message({
+                type: 'success',
+                message: '加入团队成功!'
+              });
+            }
+            else{
+              this.$message({
+                type: 'info',
+                message: '加入团队失败!'
+              });
+            }
+          } catch (error) {
+            console.error('加入团队失败', error);
+          }
+        }).catch(() => {
+          this.$message({
+            type: 'info',
+            message: '已取消退出'
+          });
+        });
     },
     handlePageChange(page) {
       this.currentPage = page;
       this.searchTeams();
     },
-    handleCreateTeam(){
-      if(this.createTeamParameter.teamName.length > 10
-      || this.createTeamParameter.teamName.length == 0){
+    async handleCreateTeam() {
+      if (this.createTeamParameter.teamName.length > 10
+        || this.createTeamParameter.teamName.length == 0) {
         this.$message.warning("请正确输入团队名称!");
         return;
       }
-      if(this.createTeamParameter.teamName.includes(' ')){
+      if (this.createTeamParameter.teamName.includes(' ')) {
         this.$message.warning("团队名称不能出现空格！");
         return;
       }
-      if(this.createTeamParameter.teamIntroduction.length > 100){
+      if (this.createTeamParameter.teamIntroduction.length > 100) {
         this.$message.warning("团队简介长度超出限制！");
         return;
       }
       this.createTeamParameter.createTeamDialogVisible = false;
-      //调接口
+      // 新接口
+      await axios.post('/api/createteam',{
+        params:{
+          "teamname":this.createTeamParameter.teamName,
+          "maxmember":this.createTeamParameter.teamNumberMaximum,
+          "introduction":this.createTeamParameter.teamIntroduction
+        }
+      }).then(response => {
+        console.log(response);
+        this.$message.success('创建成功！');
+      }).catch(error => {
+        console.log(error);
+        this.$message.error('创建失败！');
+      })
     },
-    cancleCreateTeam(){
+    cancleCreateTeam() {
       this.createTeamParameter.createTeamDialogVisible = false;
-      this.createTeamParameter.teamIntroduction='';
-      this.createTeamParameter.teamName='';
+      this.createTeamParameter.teamIntroduction = '';
+      this.createTeamParameter.teamName = '';
       this.createTeamParameter.teamNumberMaximum = 1;
     }
   },
+  mounted() {
+    this.searchTeams();
+  },
+  computed: {
+    filteredTeams() {
+      // 先根据你的筛选条件（如果有）过滤原始团队数据 teams
+      // 这里假设没有额外筛选条件，直接处理
+      const startIndex = (this.currentPage - 1) * this.pageSize;
+      const endIndex = startIndex + this.pageSize;
+      return this.teams.slice(startIndex, endIndex);
+    },
+    totalPages() {
+      return this.teams.length === 0? 1 : Math.ceil(this.teams.length / this.pageSize);
+    }
+  }
 };
 </script>
 
@@ -152,5 +362,9 @@ export default {
 .input-width {
   width: 180px;
   margin-right: 10px;
+}
+.pagination-container {
+    text-align: center;
+    margin-top: 20px;
 }
 </style>

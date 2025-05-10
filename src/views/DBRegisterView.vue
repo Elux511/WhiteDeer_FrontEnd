@@ -44,7 +44,7 @@
 
 
 <script>
-//import request from '@/utils/request';
+import axios from 'axios';
 export default {
     data() {
         return {
@@ -76,7 +76,7 @@ export default {
         }
     },
     methods: {
-        handleSubmit() {
+        async handleSubmit() {
         if (!this.nameReg.test(this.form.username)) {
             this.$message.warning('请正确输入用户名！');
             return;
@@ -99,10 +99,20 @@ export default {
         }
 
         this.isLoading = true;
-        setTimeout(() => {
-            this.isLoading = false;
-            this.$message.success('注册成功');
-        }, 500);
+        try{
+            const response = await axios.post('/api/register',{
+                "name":this.form.username,
+                "code":this.form.usercode,
+                "phone":this.form.phoneNumber,
+                "verificationCode":this.form.verificationCode
+            });
+            if(response.data){
+                this.$message.success('注册成功!');
+            }
+        }catch{
+            this.$message.error('注册失败!');
+        }
+        this.isLoading = false;
         },
         getVerificationCode() {
         if (!this.phoneReg.test(this.form.phoneNumber)) {
@@ -111,10 +121,7 @@ export default {
         }
         this.countdown = 60;
         this.startCountdown();
-        // 这里应调用后端接口发送验证码，以下为模拟
-        setTimeout(() => {
-            this.$message.success('验证码已发送');
-        }, 1500);
+        axios.post(`/api/vericode?phone=${this.form.phoneNumber}`);
         },
         startCountdown() {
         if (this.timer) {

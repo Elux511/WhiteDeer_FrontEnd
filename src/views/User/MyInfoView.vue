@@ -1,8 +1,13 @@
 <template>
   <div class="user-info-container">
     <div class="user-info-item">
-      <span class="label">用户名</span>
-      <span class="value">{{ userInfo.username }}</span>
+      <span class="label">账号:</span>
+      <span class="id-value">{{ userInfo.id }}</span>
+    </div>
+    <hr class="divider" />
+    <div class="user-info-item">
+      <span class="label">用户名:</span>
+      <span class="value">{{ userInfo.name }}</span>
       <el-button type="text" @click="changeNameDialogVisible = true" class="button-margin">更换用户名</el-button>
       <el-dialog title="修改用户名" :visible.sync="changeNameDialogVisible" width="30%" center>
         <el-form>
@@ -18,8 +23,8 @@
     </div>
     <hr class="divider" />
     <div class="user-info-item">
-      <span class="label">手机号</span>
-      <span class="value">{{ userInfo.phone }}</span>
+      <span class="label">手机号:</span>
+      <span class="value">{{ userInfo.phoneNumber }}</span>
       <el-button type="text" @click="changePhoneDialogVisible = true" class="button-margin">更换手机号</el-button>
       <el-dialog title="修改手机号" :visible.sync="changePhoneDialogVisible" width="30%" center>
         <el-input placeholder="请输入新手机号" v-model="updatePhone"></el-input>
@@ -80,14 +85,15 @@
 
 <script>
 import axios from 'axios';
+import { Message } from 'element-ui';
 
 export default {
   data() {
     return {
       userInfo: {
-        id:'',
-        name:'',
-        phoneNumber:'',
+        id:'12121212',
+        name:'茧之泪殇',
+        phoneNumber:'13013013130',
         photo:null
       },
       isLoading: true,
@@ -122,11 +128,15 @@ export default {
   methods: {
     async fetchUserInfo() {
       try {
-        const response = await axios.get('/api/user-info');
+        const id = this.$store.getters.getid;
+        const response = await axios.get(`/api/myinfo?id=${id}`, {
+          responseType: 'blob' // 设置响应类型为blob，以便正确处理二进制数据
+        });
         this.userInfo = response.data;
-        this.isLoading = false;
+        
       } catch (error) {
         console.error('获取用户信息失败', error);
+        Message.error('获取用户信息失败，请检查网络或联系管理员');
         this.isLoading = false;
       }
     },
@@ -137,20 +147,27 @@ export default {
         }
         this.countdown = 60;
         this.startCountdown();
-        // 这里应调用后端接口发送验证码，以下为模拟
-        setTimeout(() => {
-            this.$message.success('验证码已发送');
-        }, 1500);
+        axios.post(`/api/vericode?phone=${this.updatePhone}`);
     },
-    handleChangeName(){
+    async handleChangeName(){
       if(!this.nameReg.test(this.updateName)){
         this.$message.warning('请正确输入用户名！');
         return;
       }
-      //调接口
+      const id = this.$store.getters.getid;
+      await axios.post('/api/changename',{
+        "id":id,
+        "newname":this.updateName
+      }).then(response => {
+        console.log(response);
+        this.$message.success('修改成功！');
       this.changeNameDialogVisible = false;
+      }).catch(error => {
+        console.log(error);
+        this.$message.error('修改失败！');
+      });
     },
-    handleChangePhone() {
+    async handleChangePhone() {
       if (!this.phoneReg.test(this.updatePhone)) {
         this.$message.warning('请正确填写手机号');
         return;
@@ -159,8 +176,19 @@ export default {
         this.$message.warning('请正确填写验证码');
         return;
       }
-      //调接口
-      this.changePhoneDialogVisible = false;
+      const id = this.$store.getters.getid;
+      await axios.post('/api/changephone',{
+        "id":id,
+        "newphone":this.updatePhone,
+        "verificationCode":this.verificationCode
+      }).then(response => {
+        console.log(response);
+        this.$message.success('修改成功！');
+        this.changePhoneDialogVisible = false;
+      }).catch(error => {
+        console.log(error);
+        this.$message.error('修改失败！');
+      })
     },
     handleChangePhoto() {
       if(this.photoParameter.isCameraWorking){
@@ -281,14 +309,14 @@ export default {
         // 上传文件到后端
         async uploadImage(file) {
             const formData = new FormData();
-            formData.append("image", file);
+            formData.append("id",this.$store.getters.getid);
+            formData.append("photo", file);
             console.log("上传文件到后端");
             try {
-                const response = await axios.post("/api/upload", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
+                const response = await axios.post("/api/changephoto", formData, {
                 onUploadProgress: (progressEvent) => {
                     this.photoParameter.uploadProgress = Math.round(
-                    (progressEvent.loaded / progressEvent.total) * 100 
+                    (progressEvent.loaded / progressEvent.total) * 100
                     );
                 },
                 });
@@ -330,6 +358,11 @@ export default {
 
 .value {
   flex: 1;
+  text-align: center;
+}
+
+.id-value{
+  margin-left: 165px;
 }
 
 .button-margin {

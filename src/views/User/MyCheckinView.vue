@@ -35,7 +35,7 @@
             <div class="task-checkin-type">
               <span>打卡类型:
                 <span v-for="(type, index) in task.checkinType" :key="index">
-                  {{ type === 'face_recognition'? '人脸识别' : '定位打卡' }}
+                  {{ type === '人脸识别'? '人脸识别' : '定位打卡' }}
                   <span v-if="index < task.checkinType.length - 1">,</span>
                 </span>
               </span>
@@ -78,11 +78,14 @@
         </span>
       </el-dialog>
     </div>
+
+
+
     
 </template>
 
 <script>
-import request from '@/utils/request';
+import axios from 'axios';
 
 export default {
   data() {
@@ -97,10 +100,10 @@ export default {
           "createdTime": "2024-10-01 08:00:00",
           "status": "completed",
           "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 9,
-          "teamId": 2,
-          "checkinType": ['face_recognition', 'location_checkin']
+          "shouldCount": "10",
+          "actualCount":" 9",
+          "teamId": "2",
+          "checkinType": ['人脸识别', '定位打卡']
         },
         {
           "id": 2,
@@ -114,7 +117,7 @@ export default {
           "shouldCount": 10,
           "actualCount": 9,
           "teamId": 2,
-          "checkinType": ['face_recognition', 'location_checkin']
+          "checkinType": ['人脸识别', '定位打卡']
         },
         {
           "id": 3,
@@ -128,7 +131,7 @@ export default {
           "shouldCount": 10,
           "actualCount": 10,
           "teamId": 2,
-          "checkinType": ['face_recognition']
+          "checkinType": ['人脸识别']
         },
         {
           "id": 4,
@@ -142,7 +145,7 @@ export default {
           "shouldCount": 10,
           "actualCount": 0,
           "teamId": 2,
-          "checkinType": ['location_checkin']
+          "checkinType": ['定位打卡']
         },
         {
           "id": 3,
@@ -151,12 +154,12 @@ export default {
           "startTime": "2024-10-01 09:00:00",
           "endTime": "2024-10-01 09:30:00",
           "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
+          "status": "incompleted",
           "punchTime": "2024-10-01 09:15:00",
           "shouldCount": 10,
           "actualCount": 10,
           "teamId": 2,
-          "checkinType": ['face_recognition']
+          "checkinType": ['人脸识别']
         },
         {
           "id": 4,
@@ -165,12 +168,12 @@ export default {
           "startTime": "2024-10-01 09:00:00",
           "endTime": "2024-10-01 09:30:00",
           "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
+          "status": "incompleted",
           "punchTime": "2024-10-01 09:15:00",
           "shouldCount": 10,
           "actualCount": 0,
           "teamId": 2,
-          "checkinType": ['location_checkin']
+          "checkinType": ['定位打卡']
         },
         {
           "id": 3,
@@ -184,7 +187,7 @@ export default {
           "shouldCount": 10,
           "actualCount": 10,
           "teamId": 2,
-          "checkinType": ['face_recognition']
+          "checkinType": ['人脸识别']
         },
         {
           "id": 4,
@@ -198,7 +201,7 @@ export default {
           "shouldCount": 10,
           "actualCount": 0,
           "teamId": 2,
-          "checkinType": ['location_checkin']
+          "checkinType": ['定位打卡']
         },
         {
           "id": 3,
@@ -212,7 +215,7 @@ export default {
           "shouldCount": 10,
           "actualCount": 10,
           "teamId": 2,
-          "checkinType": ['face_recognition']
+          "checkinType": ['人脸识别']
         },
         {
           "id": 4,
@@ -226,7 +229,7 @@ export default {
           "shouldCount": 10,
           "actualCount": 0,
           "teamId": 2,
-          "checkinType": ['location_checkin']
+          "checkinType": ['定位打卡']
         },
         {
           "id": 3,
@@ -240,7 +243,7 @@ export default {
           "shouldCount": 10,
           "actualCount": 10,
           "teamId": 2,
-          "checkinType": ['face_recognition']
+          "checkinType": ['人脸识别']
         },
         {
           "id": 4,
@@ -254,7 +257,7 @@ export default {
           "shouldCount": 10,
           "actualCount": 0,
           "teamId": 2,
-          "checkinType": ['location_checkin']
+          "checkinType": ['定位打卡']
         }
       ],
       countdown: 0,
@@ -276,7 +279,11 @@ export default {
       currentTaskId:'', //当前执行打卡的任务id
       pageSize: 6,
       currentPage: 1,  //当前页
-      selectedCameraDeviceId: '' //存储用户选择的摄像头设备ID
+      selectedCameraDeviceId: '', //存储用户选择的摄像头设备ID
+      userLatitude: null, // 用户的纬度
+      userLongitude: null, // 用户的经度
+      locationError: null, // 存储位置获取的错误信息
+      locationSuccess:true 
     };
   },
   computed: {
@@ -320,7 +327,8 @@ export default {
   methods: {
     async fetchTasks() {
       try {
-        const response = await request.get('YOUR_API_ENDPOINT');
+        const id = this.$store.getters.getid;
+        const response = await axios.get(`/api/mycheckin?id=${id}`);
         this.tasks = response.data;
         this.isLoading = false;
       } catch (error) {
@@ -333,8 +341,68 @@ export default {
     },
     checkin(task) {
       this.currentTaskId = task.id;
-      this.checkinDialogVisible = true;
+      if(task.checkinType.includes('人脸识别')){
+        console.log("人脸识别")
+        this.checkinDialogVisible = true;
+      }
+      if (task.checkinType.includes('定位打卡')) {
+        console.log("定位打卡")
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              this.userLatitude = position.coords.latitude;
+              this.userLongitude = position.coords.longitude;
+              if(!task.checkinType.includes('人脸识别')){
+                const id = this.$store.getters.getid;
+                try{
+                  const response = await axios.post('/api/checkin',{
+                  "id":id,
+                  "taskid":task.id,
+                  "photo":null,
+                  "Latitude":this.userLatitude,
+                  "Longitude":this.userLongitude
+                });
+                if(response.data){
+                  this.$message({
+                    type: 'success',
+                    message: '打卡成功!'
+                  });
+                }
+                else{
+                  this.$message({
+                    type: 'error',
+                    message: '打卡失败!'
+                  });
+                }
+                } catch(error){
+                  this.$message({
+                    type: 'error',
+                    message: '打卡失败!'
+                  });
+                }
+              }
+              // 在这里将位置信息添加到要提交的打卡数据中
+            },
+            (error) => {
+              this.locationError = '获取位置失败';
+              this.$message.error('获取位置失败，请检查您的设备是否开启定位功能');
+              console.error('获取位置失败:', error);
+            },
+            {
+              enableHighAccuracy: true,  // 优先使用 GNSS 等高精度源
+              timeout: 5000,             // 超时时间（毫秒）
+              maximumAge: 0               // 不缓存旧位置
+            }
+          );
+        }
+        else {
+          this.locationError = '您的浏览器不支持地理定位功能！';
+          this.$message.error('您的浏览器不支持地理定位功能，请使用支持的浏览器');
+          alert("您的浏览器不支持地理定位功能！");
+        }
+      }
     },
+    
     
     startCountdown() {
         if (this.timer) {
@@ -451,18 +519,34 @@ export default {
             formData.append("id",this.$store.getters.getid);
             formData.append("taskid",this.currentTaskId);
             formData.append("photo", file);
+            formData.append("Latitude",this.userLatitude);
+            formData.append("Longitude",this.userLongitude);
             console.log("上传文件到后端");
             try {
-                const response = await request.post("/api/checkin", formData, {
+                const response = await axios.post("/api/checkin", formData, {
                 onUploadProgress: (progressEvent) => {
                     this.photoParameter.uploadProgress = Math.round(
                     (progressEvent.loaded / progressEvent.total) * 100
                     );
                 },
                 });
-                console.log("上传成功", response.data);
+                if(response.data){
+                  this.$message({
+                    type: 'success',
+                    message: '打卡成功!'
+                  });
+                }
+                else{
+                  this.$message({
+                    type: 'error',
+                    message: '打卡失败!'
+                  });
+                }
             } catch (error) {
-                console.error("上传失败", error);
+                this.$message({
+                    type: 'error',
+                    message: '打卡失败!'
+                  });
             }
             return 1;
         },

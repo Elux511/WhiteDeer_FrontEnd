@@ -53,7 +53,7 @@
 </template>
 
 <script>
-//import request from '@/utils/request';
+import axios from 'axios';
 export default {
   data() {
     return {
@@ -97,7 +97,7 @@ export default {
     }
   },
   methods: {
-    handleSubmit1() {
+    async handleSubmit1() {
       if(!this.phoneReg.test(this.form1.phoneNumber)) {
         this.$message.warning('请正确填写手机号');
         return;
@@ -107,18 +107,24 @@ export default {
         return;
       }
       this.isLoading = true;
-      setTimeout(() => {
-        this.isLoading = false;
-        this.$message.success('登录成功');
-      }, 1500);
-      this.$store.commit('Login')
-      this.saveDataToLocalStorage('loginInfoKey1',{
-        phoneNumber:this.form1.phoneNumber
-      })
-      /*跳转至用户试图*/
-      //this.$router.push('/home/user')
+      try{
+        const response = await axios.post('/api/login1',{
+          "phone":this.form1.phoneNumber,
+          "verificationCode":this.form1.verificationCode
+        });
+        if(response.data){
+          this.$message.success('登录成功!');
+          this.$store.commit('Login');
+          this.saveDataToLocalStorage('loginInfoKey1',{
+            phoneNumber:this.form1.phoneNumber
+          })
+        }
+        }catch{
+          this.$message.error('登录失败!');
+        }
+      this.isLoading = false;
     },
-    handleSubmit2() {
+    async handleSubmit2() {
       if (!this.zhanghaoReg.test(this.form2.zhanghao)) {
         this.$message.warning('请正确填写账号');
         return;
@@ -128,20 +134,26 @@ export default {
         return;
       }
       this.isLoading = true;
-      setTimeout(() => {
+        //插眼
+        this.$store.commit('Login')
+      try{
+        const response = await axios.post('/api/login2',{
+          "id":this.form2.zhanghao,
+          "code":this.form2.code
+        });
+        if(response.data){
+          this.$message.success('登录成功!');
+          this.saveDataToLocalStorage('loginInfoKey2',{
+            id:this.form2.zhanghao,
+            code:this.form2.code
+          })
+        }
+        }catch{
+          this.$message.error('登录失败!');
+        }
         this.isLoading = false;
-        this.$message.success('登录成功');
-      }, 500);
-      this.$store.commit('Login')
-     // this.$store.commit('setid',id)
-      this.saveDataToLocalStorage('loginInfoKey2',{
-        id:this.form2.zhanghao,
-        code:this.form2.code
-      })
-      /*request.post('api/login',{
-        id:this.form2.zhanghao,
-        code:this.form2.code
-      })*/
+        
+    
 
     },
     getVerificationCode() {
@@ -151,10 +163,7 @@ export default {
       }
       this.countdown = 60;
       this.startCountdown();
-      // 这里应调用后端接口发送验证码，以下为模拟
-      setTimeout(() => {
-        this.$message.success('验证码已发送');
-      }, 1500);
+      axios.post(`/api/vericode?phone=${this.form1.phoneNumber}`);
     },
     startCountdown() {
       if (this.timer) {
