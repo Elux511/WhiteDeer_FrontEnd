@@ -1,4 +1,5 @@
 <template>
+  <div>
     <div class="user-view-container">
       <el-row>
         <!-- 左侧导航栏 -->
@@ -59,6 +60,37 @@
           <component :is="currentComponent"></component>
         </el-col>
       </el-row>
+      </div>
+      <div class="center">
+        <el-dialog title="上传照片" :visible.sync="faceDialogVisible" width="55%" style="margin-top:-5%" center custom-class="custom-checkin-dialog">
+          <div v-if="photoParameter.cameraDevices.length > 1">
+          选择调用的摄像头设备：
+          <el-select v-model="selectedCameraDeviceId" placeholder="选择摄像头">
+            <el-option
+              v-for="device in photoParameter.cameraDevices"
+              :key="device.deviceId"
+              :label="device.label"
+              :value="device.deviceId"
+            ></el-option>
+          </el-select>
+        </div>
+        <div class="video-container">
+          <video ref="video" autoplay playsinline></video>
+          <img  v-if="photoParameter.showingPicture" :src="photoParameter.imageUrl" alt="Displayed Image" />
+        </div>
+        <div class="button-container">
+          <button @click="startCamera">启动摄像头</button>
+          <button @click="stopCamera">关闭摄像头</button>
+          <button v-if="!photoParameter.showingPicture" @click="captureImage">拍照</button>
+          <button v-if="photoParameter.isCaptured" @click="submitImage">提交</button>
+          <button v-if="photoParameter.showingPicture" @click="startAgain">重拍</button>
+          <progress :value="photoParameter.uploadProgress" max="100" v-if="photoParameter.uploadProgress > 0"></progress>
+        </div>
+        <span slot="footer" class="dialog-footer">
+          <el-button type="primary" @click="close">关 闭</el-button>
+        </span>
+        </el-dialog>
+      </div>
     </div>
   </template>
   
@@ -80,7 +112,18 @@
       timer: null,
       animateSeparator: false,
       separator: ':',
-      lastSynced: null
+      lastSynced: null,
+      faceDialogVisible: false,
+      photoParameter:{
+        mediaStream: null,
+        uploadProgress: 0,
+        imageUrl:'',
+        ImageFile:null,
+        isCaptured:false,
+        showingPicture:false,
+        isCameraWorking:false,
+        cameraDevices: []
+      },
       };
     },
     computed: {
@@ -118,8 +161,12 @@
       return this.serverTime.getSeconds() * 6
     }
   },
+  created(){
+    this.checkFace();
+  },
   mounted() {
-    this.syncServerTime()
+    this.syncServerTime();
+    this.enumerateCameras();
     // 每秒更新一次时间
     this.timer = setInterval(() => {
       if (this.serverTime) {
@@ -133,6 +180,15 @@
     clearInterval(this.timer)
   },
     methods: {
+      checkFace(){
+        if(!this.$store.getters.getFaceStatus){
+          this.$confirm("检测到您还未上传人脸照片，是否立即前往上传？", '提示', {
+            confirmButtonText: '立即上传',
+            cancelButtonText: '稍后上传',
+            type: 'warning'
+          }).then(() => {this.faceDialogVisible = true}).catch(() => {});
+        }
+      },
       async syncServerTime() {
       try {
         // 替换为您的实际服务器时间API
@@ -159,8 +215,8 @@
         // 降级使用客户端时间
         this.serverTime = new Date()
         
-        // 显示错误提示
-        this.$message && this.$message.error('服务器时间获取失败，使用本地时间')
+        // 显示错误提示插眼
+        //this.$message && this.$message.error('服务器时间获取失败，使用本地时间')
       }
     },
       handleMenuSelect(key) {
@@ -200,7 +256,137 @@
           });
         });
         
-      }
+      },
+      async enumerateCameras() {
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter(device => device.kind === 'videoinput');
+          this.photoParameter.cameraDevices = videoDevices;
+          if (videoDevices.length > 0) {
+            this.selectedCameraDeviceId = videoDevices[0].deviceId; // 默认选择第一个摄像头
+          }
+          console.log('摄像头设备:', videoDevices);
+        } catch (error) {
+          console.error('枚举摄像头失败:', error);
+        }
+      },
+      async startCamera() {
+        try {
+          const constraints = {
+            video: { deviceId: { exact: this.selectedCameraDeviceId } }
+          };
+          this.photoParameter.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+          this.$refs.video.srcObject = this.photoParameter.mediaStream;
+          this.$refs.video.play();
+          this.photoParameter.isCameraWorking = true;
+        } catch (error) {
+          console.error('摄像头调用失败:', error);
+        }
+      },
+      stopCamera() {
+        if (this.photoParameter.mediaStream) {
+          const tracks = this.photoParameter.mediaStream.getTracks();
+          tracks.forEach(track => track.stop()); // 关闭所有媒体流跟踪
+          this.photoParameter.mediaStream = null;
+          this.$refs.video.srcObject = null; // 重置video元素
+          this.photoParameter.isCameraWorking = false;
+        }
+      },
+      startAgain(){
+        this.photoParameter.ImageFile = null;
+        this.photoParameter.isCaptured = false;
+        this.photoParameter.showingPicture = false;
+        this.startCamera();
+      },
+      showBlobImage(blobFile) {
+        const objectUrl = URL.createObjectURL(blobFile);
+        this.photoParameter.imageUrl = objectUrl;
+      },
+      // 拍照并转为文件
+      async captureImage() {
+        if(!this.photoParameter.isCameraWorking) {
+          return;
+        }
+        const canvas = document.createElement("canvas");
+        const video = this.$refs.video;// 等待视频元数据加载
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              
+        //转换为blob
+        const blob = await new Promise((resolve) => {
+          canvas.toBlob(resolve, "image/jpeg", 0.8); // 质量压缩至80%
+        });
+        const file = new File([blob], "capture.jpeg", { type: "image/jpeg" });
+        this.photoParameter.ImageFile = file;
+        this.photoParameter.isCaptured = true;
+        this.photoParameter.showingPicture = true;
+        this.stopCamera();
+              
+        // 回显照片到页面上
+        try {
+          const objectUrl = URL.createObjectURL(blob);
+          this.photoParameter.imageUrl = objectUrl;
+        } catch (error) {
+            console.error('创建对象URL失败', error);
+          }
+      },
+      async submitImage() {
+            const formData = new FormData();
+            formData.append("id",this.$store.getters.getid);
+            formData.append("face", this.photoParameter.ImageFile);
+            try {
+                const response = await axios.patch('/api/setface', formData, {
+                  onUploadProgress: (progressEvent) => {
+                    this.photoParameter.uploadProgress = Math.round(
+                    (progressEvent.loaded / progressEvent.total) * 100
+                    );
+                  }
+                });
+                if(response.data.status !== 1) {return}
+                this.$confirm("人脸照片上传成功！","上传成功",{
+                  confirmButtonText: '确定',
+                  type: 'info'
+                }).then(() => {
+                  this.$store.commit('setFaceStatus',true);
+                  this.faceDialogVisible = false;
+                  this.resetPhotoParameter();
+                }).catch(() =>{
+                  this.$store.commit('setFaceStatus',true);
+                  this.faceDialogVisible = false;
+                  this.resetPhotoParameter();
+                })
+            } catch (error) {
+              this.$confirm("人脸照片上传失败！请重试！","上传失败",{
+                  confirmButtonText: '确定',
+                  type: 'info'
+                }).then(() => {
+                  this.resetPhotoParameter();
+                }).catch(() =>{
+                  this.resetPhotoParameter();
+                })
+            }
+    },
+
+        // 上传文件到后端
+        resetPhotoParameter(){
+          this.photoParameter.mediaStream = null,
+          this.photoParameter.uploadProgress = 0,
+          this.photoParameter.imageUrl = '',
+          this.photoParameter.ImageFile = null,
+          this.photoParameter.isCaptured = false,
+          this.photoParameter.showingPicture = false,
+          this.photoParameter.isCameraWorking = false
+        },
+        //关闭打卡界面
+        close(){
+          this.faceDialogVisible = false;
+          if(this.photoParameter.isCameraWorking){
+            this.stopCamera();
+          }
+          this.resetPhotoParameter();
+        }
     }
   };
   </script>
@@ -368,4 +554,59 @@
   z-index: 10;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
 }
+
+
+
+.button-container {
+    display: flex;
+    flex-direction:row;
+    justify-content: center;
+    background-color: rgb(210, 228, 235);
+    margin-left:40px;
+    margin-right:40px;
+}
+.button-container button {
+    width:auto;
+    height:30px;
+    margin-right: 3vh;
+}
+
+button{
+  margin:0;
+}
+
+.video-container {
+  width: 100%;
+  max-width: 800px;
+  height: 0;
+  padding-bottom: 56.25%; /* 16:9 宽高比 */
+  position: relative; /* 关键：设置为相对定位 */
+  margin-bottom: 20px;
+}
+.video-container video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block; /* 确保视频在显示时占满空间 */
+}
+.video-container img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block; /* 确保图片在显示时占满空间 */
+}
+
+.el-dialog__footer {
+  padding: 0px;
+  margin:0px;
+}
+
+
+
   </style>

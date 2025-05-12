@@ -76,7 +76,7 @@
     </div>
     <div class="photo-container">
       <div class="photo-display">
-        <img :src="userInfo.photo" alt="用户照片" v-if="userInfo.photo" />
+        <img :src="userInfo.face" alt="用户照片" v-if="userInfo.face" />
         <div class="placeholder" v-else>照片显示</div>
       </div>
     </div>
@@ -85,7 +85,7 @@
 
 <script>
 import axios from 'axios';
-import { Message } from 'element-ui';
+//插眼import { Message } from 'element-ui';
 
 export default {
   data() {
@@ -94,7 +94,7 @@ export default {
         id:'12121212',
         name:'茧之泪殇',
         phoneNumber:'13013013130',
-        photo:null
+        face:null
       },
       isLoading: true,
       changeNameDialogVisible:false,
@@ -134,10 +134,11 @@ export default {
         });
         this.userInfo = response.data;
         
-      } catch (error) {
+      } //插眼
+      catch (error) {
         console.error('获取用户信息失败', error);
-        Message.error('获取用户信息失败，请检查网络或联系管理员');
-        this.isLoading = false;
+        /*Message.error('获取用户信息失败，请检查网络或联系管理员');
+        this.isLoading = false;*/
       }
     },
     getVerificationCode() {
@@ -147,15 +148,19 @@ export default {
         }
         this.countdown = 60;
         this.startCountdown();
-        axios.post(`/api/vericode?phone=${this.updatePhone}`);
+        axios.post(`/api/vericode?phoneNumber=${this.updatePhone}`);
     },
     async handleChangeName(){
       if(!this.nameReg.test(this.updateName)){
         this.$message.warning('请正确输入用户名！');
         return;
       }
+      if(this.updateName === this.userInfo.name){
+        this.$message.warning('请勿修改重复名字！');
+        return;
+      }
       const id = this.$store.getters.getid;
-      await axios.post('/api/changename',{
+      await axios.patch('/api/changename',{
         "id":id,
         "newname":this.updateName
       }).then(response => {
@@ -172,15 +177,22 @@ export default {
         this.$message.warning('请正确填写手机号');
         return;
       }
+      if(this.updatePhone === this.userInfo.phoneNumber){
+        this.$message.warning('请勿修改重复手机号！');
+        return;
+      }
       if(!this.vercodeReg.test(this.verificationCode)) {
         this.$message.warning('请正确填写验证码');
         return;
       }
       const id = this.$store.getters.getid;
-      await axios.post('/api/changephone',{
+      await axios.post('/api/checkvericode',{
+        "phoneNumber":this.updatePhone,
+        "vericode":this.verificationCode
+      });//插眼,待完善
+      await axios.patch('/api/changephone',{
         "id":id,
-        "newphone":this.updatePhone,
-        "verificationCode":this.verificationCode
+        "phoneNumber":this.updatePhone
       }).then(response => {
         console.log(response);
         this.$message.success('修改成功！');
@@ -310,10 +322,10 @@ export default {
         async uploadImage(file) {
             const formData = new FormData();
             formData.append("id",this.$store.getters.getid);
-            formData.append("photo", file);
+            formData.append("face", file);
             console.log("上传文件到后端");
             try {
-                const response = await axios.post("/api/changephoto", formData, {
+                const response = await axios.patch("/api/setface", formData, {
                 onUploadProgress: (progressEvent) => {
                     this.photoParameter.uploadProgress = Math.round(
                     (progressEvent.loaded / progressEvent.total) * 100

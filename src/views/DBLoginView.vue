@@ -42,7 +42,7 @@
             </el-tab-pane>
             <el-tab-pane label="扫码登录" name="saoma-login">
               <!-- 待完善 -->
-                <img src="../../image/zw.jpg">
+                <img src="../../image/QRcode.png" style="left:30px;top:10px;">
             </el-tab-pane>
           </el-tabs>
           <p class="register-link">没有账号? <router-link to="/register">去注册</router-link></p>
@@ -108,20 +108,32 @@ export default {
       }
       this.isLoading = true;
       try{
-        const response = await axios.post('/api/login1',{
-          "phone":this.form1.phoneNumber,
-          "verificationCode":this.form1.verificationCode
+        const res = await axios.post('/api/checkvericode',{
+          "phoneNumber":this.form1.phoneNumber,
+          "vericode":this.form1.verificationCode
         });
-        if(response.data){
+        if(res.data.state != 1){
+          this.$message.warning('验证码错误！');
+          return;
+        }
+        const response = await axios.post('/api/login1',{
+          "phoneNumber":this.form1.phoneNumber
+        });
+        if(response.data.status == 1){
           this.$message.success('登录成功!');
           this.$store.commit('Login');
+          this.$store.commit('setid',response.data.data.id);
+          this.$store.commit('setFaceStatus',response.data.data.haveface);
           this.saveDataToLocalStorage('loginInfoKey1',{
             phoneNumber:this.form1.phoneNumber
           })
         }
-        }catch{
-          this.$message.error('登录失败!');
+        if(response.data.status == 2){
+          this.$message.error('手机号未注册!');
         }
+      }catch{
+        this.$message.error('登录失败!请稍后重试');
+      }
       this.isLoading = false;
     },
     async handleSubmit2() {
@@ -139,22 +151,29 @@ export default {
       try{
         const response = await axios.post('/api/login2',{
           "id":this.form2.zhanghao,
-          "code":this.form2.code
+          "password":this.form2.code
         });
-        if(response.data){
+        if(response.data.state == 1){
           this.$message.success('登录成功!');
+          this.$store.commit('setid',this.form2.zhanghao);
+          this.$store.commit('setFaceStatus',response.data.data.haveface);
           this.saveDataToLocalStorage('loginInfoKey2',{
             id:this.form2.zhanghao,
             code:this.form2.code
           })
         }
-        }catch{
-          this.$message.error('登录失败!');
+        if(response.data.state == 2){
+          this.$message.error('该账号未注册!');
+          return;
         }
+        if(response.data.state == 3){
+          this.$message.error('密码错误!');
+          return;
+        }
+      }catch{
+        this.$message.error('登录失败!');
+      }
         this.isLoading = false;
-        
-    
-
     },
     getVerificationCode() {
       if(!this.phoneReg.test(this.form1.phoneNumber)) {
@@ -163,7 +182,8 @@ export default {
       }
       this.countdown = 60;
       this.startCountdown();
-      axios.post(`/api/vericode?phone=${this.form1.phoneNumber}`);
+      //插眼
+      //axios.post(`/api/vericode?phoneNumber=${this.form1.phoneNumber}`);
     },
     startCountdown() {
       if (this.timer) {

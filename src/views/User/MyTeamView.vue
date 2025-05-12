@@ -2,8 +2,8 @@
   <div class="team-container">
     <h3 class="small">我加入的团队</h3>
     <el-table :data="paginatedJoinedTeams" border>
-      <el-table-column prop="teamId" label="团队编号" align="center" width="80"></el-table-column>
-      <el-table-column prop="teamName" label="团队名称" align="center"></el-table-column>
+      <el-table-column prop="groupId" label="团队编号" align="center" width="80"></el-table-column>
+      <el-table-column prop="groupName" label="团队名称" align="center"></el-table-column>
       <el-table-column prop="memberCount" label="人数" width="130" align="center"></el-table-column>
       <el-table-column prop="createTime" label="创建时间" width="180" align="center"></el-table-column>
       <el-table-column label="操作" align="center">
@@ -20,14 +20,14 @@
 
     <h3 class="small">我管理的团队</h3>
     <el-table :data="paginatedManagedTeams" border>
-      <el-table-column prop="teamId" label="团队编号" align="center" width="80"></el-table-column>
-      <el-table-column prop="teamName" label="团队名称" align="center"></el-table-column>
+      <el-table-column prop="groupId" label="团队编号" align="center" width="80"></el-table-column>
+      <el-table-column prop="groupName" label="团队名称" align="center"></el-table-column>
       <el-table-column prop="memberCount" label="人数" width="120" align="center"></el-table-column>
       <el-table-column prop="createTime" label="创建时间" width="180" align="center"></el-table-column>
       <el-table-column label="操作" align="center" width="240">
         <template slot-scope="scope">
           <div style="display: flex;">
-          <el-button type="text" @click="getMemberList(scope.row.teamId)">查看成员信息</el-button>
+          <el-button type="text" @click="getMemberList(scope.row.groupId)">查看成员信息</el-button>
           <el-button type="text" @click="postTask(scope.row)">发布打卡任务</el-button></div>
         </template>
       </el-table-column>
@@ -62,7 +62,7 @@
           <div style="text-align: center;"><!-- 新增的打卡任务表格 -->
             <h3>打卡任务列表</h3>
             <el-table :data="currentPageTasks" style="width: 100%;">
-              <el-table-column prop="title" label="任务名称" width="120"></el-table-column>
+              <el-table-column prop="name" label="任务名称" width="120"></el-table-column>
               <el-table-column prop="id" label="编号" width="60"></el-table-column>
               <el-table-column label="完成情况">
                   <template #default="scope">
@@ -89,11 +89,11 @@
       </span>
     </el-dialog>
     
-    <el-dialog title="发布打卡任务" :visible.sync="postTaskDialogVisible" width="50%" center>
+    <el-dialog name="发布打卡任务" :visible.sync="postTaskDialogVisible" width="50%" center>
         <el-form ref="taskFormRef" :model="newTask" :rules="rules" label-width="100px" size="small">
       
-      <el-form-item label="任务名称" prop="taskName">
-        <el-input v-model="newTask.taskName" placeholder="请输入任务名称" />
+      <el-form-item label="任务名称" prop="name">
+        <el-input v-model="newTask.name" placeholder="请输入任务名称" />
       </el-form-item>
 
       <el-form-item label="任务描述" prop="description">
@@ -141,44 +141,20 @@
           
           <!-- 百度地图容器 -->
           <div class="map-container">
-            <baidu-map 
-              class="bm-view"
-              :center="mapCenter"
-              :zoom="15"
-              @ready="handleMapReady">
-              
-              <!-- 地图标记 -->
-              <bm-marker 
-                v-if="selectedPoint"
-                :position="{lng: selectedPoint.lng, lat: selectedPoint.lat}"
-                draggable="true"
-                @dragend="handleMarkerDragEnd">
-              </bm-marker>
-              
-              <!-- 搜索结果覆盖层 -->
-              <bm-local-search 
-                v-if="searchKeyword"
-                :keyword="searchKeyword"
-                :auto-viewport="true"
-                @searchcomplete="handleSearchComplete">
-              </bm-local-search>
-            </baidu-map>
-            
-            <!-- 显示选中的地址 -->
+            <!-- 确保地图容器有唯一ID -->
+            <div id="baidu-map-container" class="bm-view"></div>
             <div class="selected-address">
               <span v-if="selectedAddress">已选择: {{ selectedAddress }}</span>
               <span v-else class="text-gray-400">请在地图上选择打卡位置</span>
             </div>
           </div>
           
-          <el-form-item label="定位精度" prop="locationAccuracy">
-            <el-radio-group v-model="newTask.locationAccuracy">
-              <el-radio label="50m">50米</el-radio>
-              <el-radio label="100m">100米</el-radio>
-              <el-radio label="200m">200米</el-radio>
-              <el-radio label="500m">500米</el-radio>
-            </el-radio-group>
-          </el-form-item>
+          <el-radio-group v-model="newTask.accuracy" @change="drawCircle(selectedPoint ? new window.BMap.Point(selectedPoint.lng, selectedPoint.lat) : null)">
+            <el-radio label="50m">50米</el-radio>
+            <el-radio label="100m">100米</el-radio>
+            <el-radio label="200m">200米</el-radio>
+            <el-radio label="500m">500米</el-radio>
+          </el-radio-group>
         </el-form-item>
 
       <el-form-item label="二维码设置">
@@ -191,7 +167,7 @@
     </el-form>
         <span slot="footer" class="dialog-footer">
           <el-button type="primary" @click="handlePostTask">发 布</el-button>
-          <el-button @click="canclePostTask">取 消</el-button>
+          <el-button @click="cancelPostTask">取 消</el-button>
         </span>
     </el-dialog>
   </div>
@@ -249,7 +225,7 @@ export default {
         tasks:[
         {
           "id": 2,
-          "title": "测试数据2",
+          "name": "测试数据2",
           "description": "请在 9:00 - 9:30 之间完成打卡",
           "startTime": "2024-10-01 09:00:00",
           "endTime": "2024-10-01 09:30:00",
@@ -258,12 +234,12 @@ export default {
           "punchTime": "2024-10-01 09:15:00",
           "shouldCount": 10,
           "actualCount": 9,
-          "teamId": 2,
+          "groupId": 2,
           "checkinType": ['face_recognition', 'location_checkin']
         },
         {
           "id": 3,
-          "title": "测试数据3",
+          "name": "测试数据3",
           "description": "请在 9:00 - 9:30 之间完成打卡",
           "startTime": "2024-10-01 09:00:00",
           "endTime": "2024-10-01 09:30:00",
@@ -272,11 +248,11 @@ export default {
           "punchTime": "2024-10-01 09:15:00",
           "shouldCount": 10,
           "actualCount": 10,
-          "teamId": 2,
+          "groupId": 2,
           "checkinType": ['face_recognition']
         },{
           "id": 3,
-          "title": "测试数据3",
+          "name": "测试数据3",
           "description": "请在 9:00 - 9:30 之间完成打卡",
           "startTime": "2024-10-01 09:00:00",
           "endTime": "2024-10-01 09:30:00",
@@ -285,100 +261,7 @@ export default {
           "punchTime": "2024-10-01 09:15:00",
           "shouldCount": 10,
           "actualCount": 10,
-          "teamId": 2,
-          "checkinType": ['face_recognition']
-        },{
-          "id": 3,
-          "title": "测试数据3",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "teamId": 2,
-          "checkinType": ['face_recognition']
-        },{
-          "id": 3,
-          "title": "测试数据3",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "teamId": 2,
-          "checkinType": ['face_recognition']
-        },{
-          "id": 3,
-          "title": "测试数据3",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "teamId": 2,
-          "checkinType": ['face_recognition']
-        },{
-          "id": 3,
-          "title": "测试数据3",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "teamId": 2,
-          "checkinType": ['face_recognition']
-        },{
-          "id": 3,
-          "title": "测试数据3",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "teamId": 2,
-          "checkinType": ['face_recognition']
-        },
-        {
-          "id": 4,
-          "title": "测试数据4",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 0,
-          "teamId": 2,
-          "checkinType": ['location_checkin']
-        },
-        {
-          "id": 3,
-          "title": "测试数据5",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "teamId": 2,
+          "groupId": 2,
           "checkinType": ['face_recognition']
         }
         ]
@@ -386,141 +269,22 @@ export default {
       currentTeamId:'', //当前展示成员详情的团队id
       allJoinedTeams: [
         {
-          teamId:1,
-          teamName:'茧之泪殇',
+          groupId:1,
+          groupName:'茧之泪殇',
           isFull:"否",
           memberCount:'123',
           createTime:'2024-10-01 09:15:00'
         },
         {
-          teamId:2,
-          teamName:'茧之泪殇',
+          groupId:2,
+          groupName:'茧之泪殇',
           isFull:"否",
           memberCount:'123',
           createTime:'2024-10-01 09:15:00'
         },
         {
-          teamId:3,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
+          groupId:3,
+          groupName:'茧之泪殇',
           isFull:"否",
           memberCount:'123',
           createTime:'2024-10-01 09:15:00'
@@ -528,111 +292,26 @@ export default {
       ], // 存储所有加入的团队数据
       allManagedTeams: [
         {
-          teamId:1,
-          teamName:'茧之泪殇',
+          groupId:1,
+          groupName:'茧之泪殇',
           isFull:"否",
           memberCount:'123',
           createTime:'2024-10-01 09:15:00'
         },
         {
-          teamId:2,
-          teamName:'茧之泪殇',
+          groupId:2,
+          groupName:'茧之泪殇',
           isFull:"否",
           memberCount:'123',
           createTime:'2024-10-01 09:15:00'
         },
         {
-          teamId:3,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          teamId:1,
-          teamName:'茧之泪殇',
+          groupId:3,
+          groupName:'茧之泪殇',
           isFull:"否",
           memberCount:'123',
           createTime:'2024-10-01 09:15:00'
         }
-      
       ], // 存储所有管理的团队数据
       joinedPage: 1,
       managedPage: 1,
@@ -645,22 +324,35 @@ export default {
       taskPageSize: 4,    // 任务每页显示数量
       teamMemberDialogVisible:false,
       postTaskDialogVisible :false,
-      newTask:{
-          "title": "",
-          "description": "",
-          "startTime": "",
-          "endTime": "",
-          "createdTime": "",
-          "teamId": "",
-          "checkinType": [],
-          "isQRcode":false,
-          "location":'',
-          "locationAccuracy":'',
+      searchKeyword: '',
+      map: null,
+      geocoder: null,
+      mapCenter: { lng: 116.404, lat: 39.915 }, // 默认地图中心（北京）
+      mapApiLoaded: false, // 新增：地图API加载状态
+      mapInitialized: false, // 新增：地图初始化状态
+      selectedPoint: null,
+      selectedAddress: '',
+      locationSuggestions: [],
+      newTask: {
+        name: "",             // 改为与API一致的字段名
+        description: "",
+        startTime: "",
+        endTime: "",
+        groupId: "",           // 团队ID
+        checkinType: [],      // 打卡类型
+        isQRcode: false,      // 是否启用二维码
+        location: "",         // 打卡地点名称
+        locationDetail: "",   // 详细地址
+        Latitude:"",         //维度
+        Longitude:"",          //经度
+        accuracy: "",  // 定位精度（如"100m"）
+        mapLoadRetries:0,      //地图加载次数
+        circleOverlay: null // 新增：存储地图上绘制的圆实例
       },
       rules: {
-        taskName: [
+        name: [
           { required: true, message: '请输入任务名称', trigger: 'blur' },
-          { min: 2, max: 30, message: '长度在 2 到 15 个字符', trigger: 'blur' }
+          { min: 2, max: 15, message: '长度在 2 到 15 个字符', trigger: 'blur' }
         ],
         checkinType: [
           { type: 'array', required: true, message: '请至少选择一种打卡类型', trigger: 'change' }
@@ -671,6 +363,13 @@ export default {
         ]
       }
     };
+  },
+  beforeDestroy() {
+    // 清理地图资源
+    if (this.map) {
+      this.map.clearOverlays();
+      this.map = null;
+    }
   },
   computed: {
     // 计算当前页需要显示的加入的团队数据
@@ -711,32 +410,43 @@ export default {
     }
   },
   mounted() {
+    this.$nextTick(() => {
+    this.checkMapApiLoaded();
+  });
     this.fetchAllTeams();
   },
-  methods: {
-    async getMemberList(teamId) {
-      this.teamMemberDialogVisible = true;
-      try {
-        //新接口，获取团队成员列表和打卡任务列表，用于管理员管理团队
-          const response = await axios.get(`/api/teaminfo?teamid=${teamId}`);
-          this.currentTeam = response.data;
-          this.currentTeamId = teamId;
-          // 初始获取后，更新当前页成员信息
-          this.memberList = this.currentPageMembers;
-      } catch (error) {
-          console.error('获取团队信息失败', error);
+  watch: {
+      'newTask.checkinType': {
+        handler(newVal) {
+          if (newVal.includes('定位打卡')) {
+            // 如果勾选了定位打卡且地图未初始化，则初始化
+            if (this.mapApiLoaded && !this.mapInitialized) {
+              this.initMap();
+            }
+          } else {
+            // 如果取消勾选，清理地图资源
+            this.clearMapResources();
+          }
+        },
+        deep: true
       }
     },
-    // 一次性获取所有团队数据
+  methods: {
+    async getMemberList(groupId){
+      this.teamMemberDialogVisible = true;
+      //const response = await axios.get(`/api/group?groupid=${groupId}`);
+      console.log(groupId)
+      //插眼待完善
+    },
     async fetchAllTeams() {
       try {
         const id = this.$store.getters.getid;
         // 获取加入的团队
-        const joinedResponse = await axios.get(`/api/joinedteams?id=${id}`);
+        const joinedResponse = await axios.get(`/api/getjoinedgroups?id=${id}`);
         this.allJoinedTeams = joinedResponse.data.data || [];
         
         // 获取管理的团队
-        const managedResponse = await axios.get(`/api/managedteams?id=${id}`);
+        const managedResponse = await axios.get(`/api/getmanagedgroups?id=${id}`);
         this.allManagedTeams = managedResponse.data.data || [];
         
         this.isLoading = false;
@@ -745,126 +455,206 @@ export default {
         this.isLoading = false;
       }
     },
-    handleExit(row) {
-      this.$confirm('是否确定退出团队'+row.teamName, '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(async () => {
-          try {
-            const id = this.$store.getters.getid;
-            const teamid = row.teamId;
-            const response = await axios.post('/api/quitteam', {
-              id:id,
-              teamid:teamid
-            });
-            //待完善
-            if(response.data){
-              this.$message({
-                type: 'success',
-                message: '退出团队成功!'
-              });
-            }
-            else{
-              this.$message({
-                type: 'info',
-                message: '退出团队失败!'
-              });
-            }
-          } catch (error) {
-            console.error('退出团队失败', error);
-          }
-        }).catch(() => {
-          this.$message({
-            type: 'info',
-            message: '已取消退出'
-          });
-        });
+
+    // 检查地图API加载状态
+     checkMapApiLoaded() {
+      if (window.BMap) {
+        this.mapApiLoaded = true;
+        console.log('地图API加载成功');
+        
+        // 如果对话框已打开，初始化地图
+        if (this.postTaskDialogVisible && !this.mapInitialized) {
+          this.initMap();
+        }
+      } else {
+        // 增加重试次数限制，避免无限循环
+        if (this.mapLoadRetries < 10) {
+          this.mapLoadRetries++;
+          console.log(`地图API加载中，尝试第${this.mapLoadRetries}次...`);
+          setTimeout(() => this.checkMapApiLoaded(), 1000);
+        } else {
+          console.error('地图API加载失败，尝试次数已达上限');
+          this.$message.error('地图加载失败，请刷新页面重试');
+        }
+      }
     },
-    postTask(row){
+    
+    // 初始化地图
+    initMap() {
+      if (!this.mapApiLoaded || this.mapInitialized ||!this.newTask.checkinType.includes('定位打卡')) return;
+      try {
+        const mapContainer = document.getElementById('baidu-map-container');
+        if (!mapContainer) {
+          console.error('地图容器未找到，尝试重新获取...');
+          this.$nextTick(() => {
+            const retryContainer = document.getElementById('baidu-map-container');
+            if (retryContainer) {
+              this.map = new window.BMap.Map(retryContainer);
+              const point = new window.BMap.Point(this.mapCenter.lng, this.mapCenter.lat);
+              this.map.centerAndZoom(point, 15);
+              this.map.addControl(new window.BMap.NavigationControl());
+              this.map.addControl(new window.BMap.ScaleControl());
+              this.map.addControl(new window.BMap.OverviewMapControl());
+              this.map.enableScrollWheelZoom();
+              this.geocoder = new window.BMap.Geocoder();
+              this.map.addEventListener('click', (e) => {
+                this.selectedPoint = { lng: e.point.lng, lat: e.point.lat };
+                this.reverseGeocode(e.point);
+                this.drawCircle(e.point); // 点击地图时绘制圆
+              });
+              this.mapInitialized = true;
+              console.log('地图初始化成功');
+            }
+          });
+          return;
+        }
+        this.map = new window.BMap.Map(mapContainer);
+        const point = new window.BMap.Point(this.mapCenter.lng, this.mapCenter.lat);
+        this.map.centerAndZoom(point, 15);
+        this.map.addControl(new window.BMap.NavigationControl());
+        this.map.addControl(new window.BMap.ScaleControl());
+        this.map.addControl(new window.BMap.OverviewMapControl());
+        this.map.enableScrollWheelZoom();
+        this.geocoder = new window.BMap.Geocoder();
+        this.map.addEventListener('click', (e) => {
+          this.selectedPoint = { lng: e.point.lng, lat: e.point.lat };
+          this.reverseGeocode(e.point);
+          this.drawCircle(e.point); // 点击地图时绘制圆
+        });
+        this.mapInitialized = true;
+        console.log('地图初始化成功');
+      } catch (error) {
+        console.error('地图初始化失败:', error);
+      }
+    },
+    drawCircle(point) {
+      if (this.circleOverlay) {
+        this.map.removeOverlay(this.circleOverlay); // 移除之前绘制的圆
+      }
+      const radius = this.newTask.accuracy ? parseInt(this.newTask.accuracy.replace('m', '')) : 0;
+      if (radius > 0) {
+        const circle = new window.BMap.Circle(point, radius, {
+          strokeColor: "blue",
+          strokeWeight: 2,
+          strokeOpacity: 0.5,
+          fillColor: "blue",
+          fillOpacity: 0.1
+        });
+        this.map.addOverlay(circle);
+        this.circleOverlay = circle;
+      }
+    },
+    
+    // 搜索地点
+    searchPlace() {
+      if (!this.searchKeyword) {
+        this.$message.warning('请输入搜索关键词');
+        return;
+      }
+      
+      if (!this.mapApiLoaded || !this.map) {
+        this.$message.warning('地图API尚未加载完成');
+        return;
+      }
+      
+      // 使用百度地图本地搜索
+      const local = new window.BMap.LocalSearch(this.map, {
+        renderOptions: { map: this.map },
+        onSearchComplete: (results) => {
+          if (results && results.getCurrentNumPois() > 0) {
+            const firstResult = results.getPoi(0);
+            this.selectedPoint = { lng: firstResult.point.lng, lat: firstResult.point.lat };
+            this.reverseGeocode(firstResult.point);
+          } else {
+            this.$message.warning('未找到相关地点');
+          }
+        }
+      });
+      
+      local.search(this.searchKeyword);
+    },
+    
+    // 定位到当前位置
+    locateToCurrentPosition() {
+      if (!this.mapApiLoaded || !this.map) {
+        this.$message.warning('地图API尚未加载完成');
+        return;
+      }
+      
+      const geolocation = new window.BMap.Geolocation();
+      geolocation.getCurrentPosition((result) => {
+        if (result && result.point) {
+          this.map.panTo(result.point);
+          this.selectedPoint = { lng: result.point.lng, lat: result.point.lat };
+          this.reverseGeocode(result.point);
+          this.$message.success('定位成功');
+        } else {
+          this.$message.error(`定位失败，错误码: ${geolocation.getStatus()}`);
+        }
+      });
+    },
+    
+    // 逆地理编码（坐标转地址）
+    reverseGeocode(point) {
+      if (!this.geocoder) return;
+      this.geocoder.getLocation(point, (result) => {
+        if (result) {
+          const detailedAddress = [
+            result.addressComponents.province,
+            result.addressComponents.city,
+            result.addressComponents.district,
+            result.addressComponents.street,
+            result.addressComponents.streetNumber
+          ].filter(part => part).join(' ');
+          this.selectedAddress = `已选择: ${detailedAddress}`;
+          this.newTask.location = `${result.addressComponents.street}${result.addressComponents.streetNumber}`;
+          this.newTask.locationDetail = result.address;
+          this.newTask.Latitude = point.lat;
+          this.newTask.Longitude = point.lng;
+        }
+      });
+    },
+    
+    // 显示发布任务对话框
+    postTask(row) {
       this.postTaskDialogVisible = true;
-      this.newTask.teamId = row.teamId;
+      this.newTask.groupId = row.groupId;
+      
+      // 如果地图API已加载但地图尚未初始化，初始化地图
+      this.$nextTick(() => {
+        if (this.newTask.checkinType.includes('定位打卡') && this.mapApiLoaded && !this.mapInitialized) {
+          this.initMap();
+        }
+      });
     },
     resetNewTask(){
-      this.newTask.taskName = "";
-          this.newTask.description = "",
-          this.newTask.startTime = "",
-          this.newTask.endTime ="",
-          this.newTask.createdTime = "",
-          this.newTask.teamId = "",
-          this.newTask.checkinType = [],
-          this.newTask.isQRcode = false,
-          this.newTask.locationAccuracy = '',
-          this.newTask.location = ''
+      this.newTask = {
+        name: "",           
+        description: "",
+        startTime: "",
+        endTime: "",
+        groupId: "",           
+        checkinType: [],      
+        isQRcode: false,   
+        location: "",         
+        locationDetail: "",   
+        Latitude:"",   
+        Longitude:"",  
+        accuracy: ""  
+      }
     },
-    async handlePostTask(){
-      if (this.newTask.taskName.length > 15
-        || this.newTask.taskName.length < 2) {
-        this.$message.warning("任务名称应在2-15个字符内!");
-        return;
+    clearMapResources() {
+      if (this.map) {
+        this.map.clearOverlays(); // 清除地图上的覆盖物，比如标注、多边形等
+        this.map = null; // 将地图实例设为null，释放对地图对象的引用
+        this.mapInitialized = false; // 将地图初始化状态标记为false，表明地图已不再处于初始化状态
       }
-      if (this.newTask.taskName.includes(' ')) {
-        this.$message.warning("任务名称不能出现空格！");
-        return;
-      }
-      if (this.newTask.description.length > 100) {
-        this.$message.warning("任务简介长度超出限制！");
-        return;
-      }
-      if (!this.newTask.startTime) {
-        this.$message.warning("请输入起始时间！");
-        return;
-      }
-      if (!this.newTask.endTime) {
-        this.$message.warning("请输入终止时间！");
-        return;
-      }
-      if (this.newTask.checkinType.length === 0) {
-        this.$message.warning("请选择打卡类型！");
-        return;
-      }
-      if (this.newTask.checkinType.includes('定位打卡') && !this.newTask.location) {
-        this.$message.warning("请输入打卡位置！");
-        return;
-      }
-      if (this.newTask.checkinType.includes('定位打卡') && !this.newTask.locationAccuracy) {
-        this.$message.warning("请选择打卡范围！");
-        return;
-      }
-      try {
-            const response = await axios.post('/api/createtask', {
-              "teamid":this.newTask.teamId,
-              "name":this.newTask.taskName,
-              "begintime":this.newTask.startTime,
-              "endtime":this.newTask.endTime,
-              "description":this.newTask.description,
-              "type":this.newTask.checkinType,
-              "isQRcode":this.newTask.isQRcode,
-              "location":this.newTask.location,
-              "radius":this.newTask.locationAccuracy
-            });
-            //待完善
-            if(response.data){
-              this.$message({
-                type: 'success',
-                message: '发布打卡任务成功!'
-              });
-            }
-            else{
-              this.$message({
-                type: 'info',
-                message: '发布打卡任务失败!'
-              });
-            }
-          } catch (error) {
-            console.error('发布打卡任务失败', error);
-          }
-      this.postTaskDialogVisible = false;
-      this.resetNewTask();
     },
-    canclePostTask(){
+    // 关闭对话框时重置地图状态
+    cancelPostTask() {
       this.resetNewTask();
       this.postTaskDialogVisible = false;
+      this.mapInitialized = false; // 重置地图初始化状态
     },
     prevMemberPage() {
       if (this.memberCurrentPage > 1) {
@@ -902,10 +692,10 @@ export default {
         }).then(async () => {
           try {
             const id = row.id;
-            const teamid = this.currentTeamId;
+            const groupid = this.currentTeamId;
             const response = await axios.post('/api/removesb', {
               id:id,
-              teamid:teamid
+              groupid:groupid
             });
             //待完善
             if(response.data){
@@ -934,7 +724,7 @@ export default {
     },
     async deleteTask(row) {
       const taskId = row.id;
-      this.$confirm("是否确定删除"+row.title+"任务？", '提示', {
+      this.$confirm("是否确定删除"+row.name+"任务？", '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
@@ -955,7 +745,78 @@ export default {
             message: '已取消移除'
           });
         });
+    },
+    async handlePostTask(){
+      if (this.newTask.name.length > 15
+        || this.newTask.name.length < 2) {
+        this.$message.warning("任务名称应在2-15个字符内!");
+        return;
+      }
+      if (this.newTask.name.includes(' ')) {
+        this.$message.warning("任务名称不能出现空格！");
+        return;
+      }
+      if (this.newTask.description.length > 100) {
+        this.$message.warning("任务简介长度超出限制！");
+        return;
+      }
+      if (!this.newTask.startTime) {
+        this.$message.warning("请输入起始时间！");
+        return;
+      }
+      if (!this.newTask.endTime) {
+        this.$message.warning("请输入终止时间！");
+        return;
+      }
+      if (this.newTask.checkinType.length === 0) {
+        this.$message.warning("请选择打卡类型！");
+        return;
+      }
+      // 定位打卡验证
+        if (this.newTask.checkinType.includes('定位打卡')) {
+          if (!this.selectedPoint) {
+            this.$message.warning('请在地图上选择打卡位置');
+            return;
+          }
+          
+          if (!this.newTask.accuracy) {
+            this.$message.warning('请选择定位精度');
+            return;
+          }
+        }
+      try {
+            const response = await axios.post('/api/createtask', {
+              "groupid":this.newTask.groupId,
+              "name":this.newTask.name,
+              "beginTime":this.newTask.startTime,
+              "endTime":this.newTask.endTime,
+              "description":this.newTask.description,
+              "type":this.newTask.checkinType,
+              "isQRcode":this.newTask.isQRcode,
+              "Latitude":this.newTask.Latitude,
+              "Longitude":this.newTask.Longitude,
+              "accuracy": this.newTask.accuracy.replace('m', '')
+            });
+            //待完善
+            if(response.data){
+              this.$message({
+                type: 'success',
+                message: '发布打卡任务成功!'
+              });
+            }
+            else{
+              this.$message({
+                type: 'info',
+                message: '发布打卡任务失败!'
+              });
+            }
+          } catch (error) {
+            console.error('发布打卡任务失败', error);
+          }
+      this.postTaskDialogVisible = false;
+      this.resetNewTask();
     }
+
   }
 };
 </script>
@@ -993,4 +854,27 @@ export default {
   margin: 0 8px;
 }
 
+/* 地图样式 */
+.map-container {
+  margin-top: 10px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bm-view {
+  height: 300px;
+}
+.map-search-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.selected-address {
+  padding: 8px;
+  background-color: #f5f7fa;
+  border-top: 1px solid #ebeef5;
+  font-size: 14px;
+}
+
 </style>
+

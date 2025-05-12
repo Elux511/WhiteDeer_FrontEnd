@@ -10,7 +10,7 @@ import BaiduMap from 'vue-baidu-map'
 Vue.config.productionTip = false
 Vue.use(Element)
 Vue.use(BaiduMap,{
-  ak:''//插眼密钥
+  ak:'UFmRbqgIC6MSDdN0JDZxfEJhfiixRujC'//插眼密钥
 })
 new Vue({
   router,

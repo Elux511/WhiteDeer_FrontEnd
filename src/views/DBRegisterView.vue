@@ -100,14 +100,39 @@ export default {
 
         this.isLoading = true;
         try{
+            const res = await axios.post('/api/checkvericode',{
+                "phone":this.form.phoneNumber,
+                "vericode":this.form.verificationCode
+            });
+            if(res.data.state != 1){
+                this.$message.warning('验证码错误！');
+                return;
+            }
             const response = await axios.post('/api/register',{
                 "name":this.form.username,
-                "code":this.form.usercode,
-                "phone":this.form.phoneNumber,
-                "verificationCode":this.form.verificationCode
+                "password":this.form.usercode,
+                "phoneNumber":this.form.phoneNumber
             });
-            if(response.data){
-                this.$message.success('注册成功!');
+            if(response.data.state == 1){
+                this.$confirm(`您的账号是：${response.data.data.id}`,'注册成功！',{
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'success'
+                }).then(() => {
+                    this.saveDataToLocalStorage('loginInfoKey2',{
+                        id:response.data.data.id
+                    })
+                    this.$router.push('/login');
+                }).catch(() => {
+                    this.saveDataToLocalStorage('loginInfoKey2',{
+                        id:response.data.data.id
+                    })
+                    this.$router.push('/login');
+                })
+            }
+            if(response.data.state == 2){
+                this.$message.warning('手机号已被注册！');
+                return;
             }
         }catch{
             this.$message.error('注册失败!');
@@ -121,7 +146,9 @@ export default {
         }
         this.countdown = 60;
         this.startCountdown();
-        axios.post(`/api/vericode?phone=${this.form.phoneNumber}`);
+        //插眼
+        //axios.post(`/api/vericode?phoneNumber=${this.form.phoneNumber}`);
+        this.$message.success('已发送验证码，请注意查收')
         },
         startCountdown() {
         if (this.timer) {

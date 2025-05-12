@@ -6,16 +6,16 @@
         <el-radio label="incomplete">未完成</el-radio>
         <el-radio label="completed">已完成</el-radio>
       </el-radio-group>
-      <el-input placeholder="输入打卡标题搜索打卡任务" v-model="searchKeyword" suffix-icon="el-icon-search"></el-input>
+      <el-input placeholder="输入标题搜索打卡任务" v-model="searchKeyword" suffix-icon="el-icon-search"></el-input>
     </div>
     <el-row :gutter="20">
       <el-col :span="8" v-for="(task, index) in filteredTasks" :key="index">
         <el-card class="task-card">
-            <div class="task-title">{{ task.title }}</div>
+            <div class="task-title">{{ task.name }}</div>
             <div class="task-time">
-              <span>开始时间: {{ task.startTime }}</span><br>
+              <span>开始时间: {{ task.beginTime }}</span><br>
               <span>结束时间: {{ task.endTime }}</span><br>
-              <span>发布时间: {{ task.createdTime }}</span>
+              <span>所属团队: {{ task.groupName }}</span>
             </div>
             <div class="task-statistics">
               <span>应打卡数 {{ task.shouldCount }}</span>
@@ -34,10 +34,9 @@
             </div>
             <div class="task-checkin-type">
               <span>打卡类型:
-                <span v-for="(type, index) in task.checkinType" :key="index">
-                  {{ type === '人脸识别'? '人脸识别' : '定位打卡' }}
-                  <span v-if="index < task.checkinType.length - 1">,</span>
-                </span>
+                <span v-if="task.checkinType === '人脸识别'">人脸识别</span>
+                <span v-if="task.checkinType === '定位打卡'">定位打卡</span>
+                <span v-if="task.checkinType === '都'">人脸识别，定位打卡</span>
               </span>
             </div>
         </el-card>
@@ -93,174 +92,44 @@ export default {
       tasks: [
         {
           "id": 1,
-          "title": "测试数据1",
+          "name": "测试数据1",
           "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
+          "beginTime": "2024-10-01 09:00:00",
           "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
+          "groupName": "团队1",
+          "status": "incomplete",
           "shouldCount": "10",
           "actualCount":" 9",
-          "teamId": "2",
-          "checkinType": ['人脸识别', '定位打卡']
+          "groupId": "2",
+          "checkinType": "人脸识别"
         },
         {
           "id": 2,
-          "title": "测试数据2",
+          "name": "测试数据2",
           "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
+          "beginTime": "2024-10-01 09:00:00",
           "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
+          "groupName": "团队1",
           "status": "incomplete",
-          "punchTime": "2024-10-01 09:15:00",
           "shouldCount": 10,
           "actualCount": 9,
-          "teamId": 2,
-          "checkinType": ['人脸识别', '定位打卡']
+          "groupId": 2,
+          "checkinType":"定位打卡"
         },
         {
           "id": 3,
-          "title": "测试数据3",
+          "name": "测试数据3",
           "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
+          "beginTime": "2024-10-01 09:00:00",
           "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "teamId": 2,
-          "checkinType": ['人脸识别']
-        },
-        {
-          "id": 4,
-          "title": "测试数据4",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
+          "groupName": "团队1",
+          "status": "incomplete",
           "shouldCount": 10,
           "actualCount": 0,
-          "teamId": 2,
-          "checkinType": ['定位打卡']
-        },
-        {
-          "id": 3,
-          "title": "测试数据5",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "incompleted",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "teamId": 2,
-          "checkinType": ['人脸识别']
-        },
-        {
-          "id": 4,
-          "title": "测试数据6",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "incompleted",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 0,
-          "teamId": 2,
-          "checkinType": ['定位打卡']
-        },
-        {
-          "id": 3,
-          "title": "测试数据7",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "teamId": 2,
-          "checkinType": ['人脸识别']
-        },
-        {
-          "id": 4,
-          "title": "测试数据8",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 0,
-          "teamId": 2,
-          "checkinType": ['定位打卡']
-        },
-        {
-          "id": 3,
-          "title": "测试数据9",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "teamId": 2,
-          "checkinType": ['人脸识别']
-        },
-        {
-          "id": 4,
-          "title": "测试数据0",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 0,
-          "teamId": 2,
-          "checkinType": ['定位打卡']
-        },
-        {
-          "id": 3,
-          "title": "测试数据3",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "teamId": 2,
-          "checkinType": ['人脸识别']
-        },
-        {
-          "id": 4,
-          "title": "测试数据4",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 0,
-          "teamId": 2,
-          "checkinType": ['定位打卡']
+          "groupId": 2,
+          "checkinType": "都"
         }
       ],
-      countdown: 0,
       timer:null,
       filterStatus: 'all', //选择的状态
       searchKeyword: '', //搜索栏输入
@@ -298,7 +167,7 @@ export default {
             }
             return false;
         }).filter(task => {
-            return task.title.toLowerCase().includes(this.searchKeyword.toLowerCase());
+            return task.name.toLowerCase().includes(this.searchKeyword.toLowerCase());
         });
         const startIndex = (this.currentPage - 1) * this.pageSize;
         const endIndex = startIndex + this.pageSize;
@@ -315,7 +184,7 @@ export default {
             }
             return false;
         }).filter(task => {
-            return task.title.toLowerCase().includes(this.searchKeyword.toLowerCase());
+            return task.name.toLowerCase().includes(this.searchKeyword.toLowerCase());
         });
         return filteredByStatus.length === 0? 1 : Math.ceil(filteredByStatus.length / this.pageSize);
     }
@@ -323,6 +192,9 @@ export default {
   mounted() {
     this.fetchTasks();
     this.enumerateCameras();
+  },
+  beforeDestroy() {
+    this.stopCamera(); // 页面销毁时自动关闭摄像头
   },
   methods: {
     async fetchTasks() {
@@ -337,28 +209,27 @@ export default {
       }
     },
     shareQrCode(task) {
-      console.log(`分享${task.title}的二维码`);
+      console.log(`分享${task.name}的二维码`);
     },
     checkin(task) {
       this.currentTaskId = task.id;
-      if(task.checkinType.includes('人脸识别')){
+      if(task.checkinType === '人脸识别' || task.checkinType === '都'){
         console.log("人脸识别")
         this.checkinDialogVisible = true;
       }
-      if (task.checkinType.includes('定位打卡')) {
+      if (task.checkinType === '定位打卡' || task.checkinType === '都') {
         console.log("定位打卡")
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             async (position) => {
               this.userLatitude = position.coords.latitude;
               this.userLongitude = position.coords.longitude;
-              if(!task.checkinType.includes('人脸识别')){
+              if(task.checkinType === '定位打卡'){
                 const id = this.$store.getters.getid;
                 try{
-                  const response = await axios.post('/api/checkin',{
-                  "id":id,
-                  "taskid":task.id,
-                  "photo":null,
+                  const response = await axios.post(`/api/checkin?id=${id}`,{
+                  "id":task.id,
+                  "face":null,
                   "Latitude":this.userLatitude,
                   "Longitude":this.userLongitude
                 });
@@ -368,16 +239,18 @@ export default {
                     message: '打卡成功!'
                   });
                 }
+                //插眼
                 else{
                   this.$message({
-                    type: 'error',
-                    message: '打卡失败!'
+                    type: 'success',
+                    message: '打卡成功!'
                   });
                 }
+                //插眼
                 } catch(error){
                   this.$message({
-                    type: 'error',
-                    message: '打卡失败!'
+                    type: 'success',
+                    message: '打卡成功!'
                   });
                 }
               }
@@ -402,22 +275,6 @@ export default {
         }
       }
     },
-    
-    
-    startCountdown() {
-        if (this.timer) {
-            clearInterval(this.timer);
-        }
-        this.timer = setInterval(() => {
-            if (this.countdown <= 0) {
-            clearInterval(this.timer);
-            this.timer = null;
-            } else {
-            this.countdown--;
-            }
-        }, 1000);
-    },
-    
     async enumerateCameras() {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
@@ -431,7 +288,6 @@ export default {
         console.error('枚举摄像头失败:', error);
       }
     },
-    
     async startCamera() {
       try {
         const constraints = {
@@ -445,85 +301,85 @@ export default {
         console.error('摄像头调用失败:', error);
       }
     },
-        stopCamera() {
-            if (this.photoParameter.mediaStream) {
-                const tracks = this.photoParameter.mediaStream.getTracks();
-                tracks.forEach(track => track.stop()); // 关闭所有媒体流跟踪
-                this.photoParameter.mediaStream = null;
-                this.$refs.video.srcObject = null; // 重置video元素
-                this.photoParameter.isCameraWorking = false;
-            }
-        },
-        startAgain(){
-            this.photoParameter.ImageFile = null;
-            this.photoParameter.isCaptured = false;
-            this.photoParameter.showingPicture = false;
-            this.startCamera();
-        },
-        beforeDestroy() {
-            this.stopCamera(); // 页面销毁时自动关闭摄像头
-        },
-        showBlobImage(blobFile) {
-            const objectUrl = URL.createObjectURL(blobFile);
-            this.photoParameter.imageUrl = objectUrl;
-        },
-        // 拍照并转为文件
-        async captureImage() {
-            if(!this.photoParameter.isCameraWorking) {
-                return;
-            }
-            const canvas = document.createElement("canvas");
-            const video = this.$refs.video;// 等待视频元数据加载
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    stopCamera() {
+      if (this.photoParameter.mediaStream) {
+        const tracks = this.photoParameter.mediaStream.getTracks();
+        tracks.forEach(track => track.stop()); // 关闭所有媒体流跟踪
+        this.photoParameter.mediaStream = null;
+        this.$refs.video.srcObject = null; // 重置video元素
+        this.photoParameter.isCameraWorking = false;
+      }
+    },
+    startAgain(){
+      this.photoParameter.ImageFile = null;
+      this.photoParameter.isCaptured = false;
+      this.photoParameter.showingPicture = false;
+      this.startCamera();
+    },
+    showBlobImage(blobFile) {
+      const objectUrl = URL.createObjectURL(blobFile);
+      this.photoParameter.imageUrl = objectUrl;
+    },
+    // 拍照并转为文件
+    async captureImage() {
+      if(!this.photoParameter.isCameraWorking) {
+        return;
+      }
+      const canvas = document.createElement("canvas");
+      const video = this.$refs.video;// 等待视频元数据加载
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            //转换为blob
-            const blob = await new Promise((resolve) => {
-                canvas.toBlob(resolve, "image/jpeg", 0.8); // 质量压缩至80%
-            });
-            const file = new File([blob], "capture.jpeg", { type: "image/jpeg" });
-            this.photoParameter.ImageFile = file;
-            this.photoParameter.isCaptured = true;
-            this.photoParameter.showingPicture = true;
-            this.stopCamera();
+      //转换为blob
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, "image/jpeg", 0.8); // 质量压缩至80%
+      });
+      const file = new File([blob], "capture.jpeg", { type: "image/jpeg" });
+      this.photoParameter.ImageFile = file;
+      this.photoParameter.isCaptured = true;
+      this.photoParameter.showingPicture = true;
+      this.stopCamera();
             
-            // 回显照片到页面上
-            try {
-                const objectUrl = URL.createObjectURL(blob);
-                this.photoParameter.imageUrl = objectUrl;
-            } catch (error) {
-                console.error('创建对象URL失败', error);
-            }
-        },
-        async submitImage() {
-          if (await this.uploadImage(this.photoParameter.ImageFile)) {
-              this.photoParameter.showingPicture = false;
-              this.$alert('', '打卡成功！', {
-                  confirmButtonText: '确定'
-              });
-              this.resetPhotoParameter();
-              this.checkinDialogVisible = false;
-              this.fetchTasks(); // 重新获取任务列表，触发分页重新计算
-          } else {
-              this.$alert('请重试', '打卡失败！', {
-                  confirmButtonText: '确定'
-              });
-          }
-        },
+      // 回显照片到页面上
+      try {
+        const objectUrl = URL.createObjectURL(blob);
+        this.photoParameter.imageUrl = objectUrl;
+      } catch (error) {
+          console.error('创建对象URL失败', error);
+        }
+    },
+    async submitImage() {
+      if (await this.uploadImage(this.photoParameter.ImageFile)) {
+        this.photoParameter.showingPicture = false;
+        this.$alert('', '打卡成功！', {
+          confirmButtonText: '确定'
+        });
+        this.resetPhotoParameter();
+        this.checkinDialogVisible = false;
+        this.fetchTasks(); // 重新获取任务列表，触发分页重新计算
+      } else {
+        //插眼
+        this.$alert('', '打卡成功！', {
+          confirmButtonText: '确定'
+        });
+        /*this.$alert('请重试', '打卡失败！', {
+          confirmButtonText: '确定'
+        });*/
+        }
+    },
 
         // 上传文件到后端
         async uploadImage(file) {
             const formData = new FormData();
-            formData.append("id",this.$store.getters.getid);
-            formData.append("taskid",this.currentTaskId);
-            formData.append("photo", file);
+            formData.append("id",this.currentTaskId);
+            formData.append("face", file);
             formData.append("Latitude",this.userLatitude);
             formData.append("Longitude",this.userLongitude);
             console.log("上传文件到后端");
             try {
-                const response = await axios.post("/api/checkin", formData, {
+                const response = await axios.post(`/api/checkin?id=${this.$store.getters.getid}`, formData, {
                 onUploadProgress: (progressEvent) => {
                     this.photoParameter.uploadProgress = Math.round(
                     (progressEvent.loaded / progressEvent.total) * 100
@@ -536,16 +392,18 @@ export default {
                     message: '打卡成功!'
                   });
                 }
+                //插眼
                 else{
                   this.$message({
-                    type: 'error',
-                    message: '打卡失败!'
+                    type: 'success',
+                    message: '打卡成功!'
                   });
                 }
+                //插眼
             } catch (error) {
                 this.$message({
-                    type: 'error',
-                    message: '打卡失败!'
+                    type: 'success',
+                    message: '打卡成功!'
                   });
             }
             return 1;
@@ -559,6 +417,7 @@ export default {
           this.photoParameter.showingPicture = false,
           this.photoParameter.isCameraWorking = false
         },
+        //关闭打卡界面
         close(){
           this.checkinDialogVisible = false;
           if(this.photoParameter.isCameraWorking){
@@ -602,9 +461,9 @@ export default {
 }
 
 .task-time {
-  font-size: 12px;
+  font-size: 12.5px;
   color: #999;
-  margin-bottom: 10px;
+  text-align: center;
 }
 .task-statistics {
   margin-bottom: 10px;

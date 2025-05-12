@@ -7,7 +7,8 @@ export default new Vuex.Store({
   state: {
     isLogin:false,
     isNotFound:false,
-    id:''
+    id:'',
+    haveface:false
   },
   getters: {
     getLoginState(state){
@@ -18,6 +19,9 @@ export default new Vuex.Store({
     },
     getid(state){
       return state.id;
+    },
+    getFaceStatus(state){
+      return state.haveface;
     }
   },
   mutations: {
@@ -36,6 +40,9 @@ export default new Vuex.Store({
     },
     setid(state,id){
       state.id = id;
+    },
+    setFaceStatus(state,status){
+      state.haveface = status;
     }
   },
   actions: {
