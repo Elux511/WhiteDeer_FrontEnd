@@ -147,36 +147,21 @@ export default {
           try {
             const id = this.$store.getters.getid;
             const groupid = row.groupId;
-            //插眼
-            this.$message({
-                type: 'success',
-                message: '加入团队成功!'
-              });
             const response = await axios.post('/api/joingroup', {
               "id":id,
               "groupid":groupid
             });
-            //待完善
-            if(response.data){
-              this.$message({
-                type: 'success',
-                message: '加入团队成功!'
-              });
+            if(response.data.state == 1){
+              this.$message.success('加入团队成功!');
             }
             else{
-              this.$message({
-                type: 'info',
-                message: '加入团队失败!'
-              });
+              this.$message.info('加入团队失败!');
             }
           } catch (error) {
-            console.error('加入团队失败', error);
+            this.$message.error('请求发送失败，请检查网络或联系管理员');
           }
         }).catch(() => {
-          this.$message({
-            type: 'info',
-            message: '已取消退出'
-          });
+          this.$message('已取消加入');
         });
     },
     handlePageChange(page) {
@@ -198,22 +183,22 @@ export default {
         return;
       }
       // 新接口
-      await axios.post('/api/creategroup',{
+      try{
+        const response = await axios.post('/api/creategroup',{
           "groupname":this.createTeamParameter.groupName,
           "maxmember":this.createTeamParameter.groupNumberMaximum,
           "introduction":this.createTeamParameter.groupIntroduction
-      }).then(response => {
-        console.log(response);
-        this.$message.success('创建成功！');
-      }).catch(error => {
-        //插眼
-        console.log(error);
-        this.$message.success('创建成功！');
-      })
-      this.createTeamParameter.createTeamDialogVisible = false;
-      this.createTeamParameter.groupIntroduction = '';
-      this.createTeamParameter.groupName = '';
-      this.createTeamParameter.groupNumberMaximum = 1;
+        });
+        if(response.data.state == 1){
+          this.$message.success('创建团队成功！');
+          this.cancleCreateTeam();
+        }
+        else{
+          this.$message.error('创建团队失败！')
+        }
+      }catch {
+        this.$message.error('请求发送失败，请检查网络或联系管理员');
+      }
     },
     cancleCreateTeam() {
       this.createTeamParameter.createTeamDialogVisible = false;

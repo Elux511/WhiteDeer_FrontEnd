@@ -53,7 +53,7 @@
               </div>
             </div>
           </div>
-          <el-button type="primary" @click="logout">注销账号</el-button>
+          <el-button type="primary" @click="logout" style="margin-left:30%;">注销账号</el-button>
         </el-col>
         <!-- 右侧内容展示区域 -->
         <el-col :span="18">
@@ -239,21 +239,15 @@
         this.activeMenu = key;
       },
       logout(){
-        this.$confirm('是否确定注销账号?', '提示', {
+        this.$confirm('是否确定退出登录?', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
         }).then(() => {
-          this.$message({
-            type: 'success',
-            message: '注销成功!'
-          });
+          this.$message.success('注销成功!');
           this.$store.commit('Signout');
         }).catch(() => {
-          this.$message({
-            type: 'info',
-            message: '已取消注销'
-          });
+          this.$message.info('已取消注销');
         });
         
       },

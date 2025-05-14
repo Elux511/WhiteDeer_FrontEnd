@@ -9,6 +9,7 @@
       <el-input placeholder="输入标题搜索打卡任务" v-model="searchKeyword" suffix-icon="el-icon-search"></el-input>
     </div>
     <el-row :gutter="20">
+      <h2 v-if="tasks.length == 0" style="text-align: center;">暂无数据</h2>
       <el-col :span="8" v-for="(task, index) in filteredTasks" :key="index">
         <el-card class="task-card">
             <div class="task-title">{{ task.name }}</div>
@@ -146,6 +147,7 @@ export default {
       },
       checkinDialogVisible:false,
       currentTaskId:'', //当前执行打卡的任务id
+      currentTaskType:'',//这两个主要是在dialog里不好传参
       pageSize: 6,
       currentPage: 1,  //当前页
       selectedCameraDeviceId: '', //存储用户选择的摄像头设备ID
@@ -200,11 +202,11 @@ export default {
     async fetchTasks() {
       try {
         const id = this.$store.getters.getid;
-        const response = await axios.get(`/api/mycheckin?id=${id}`);
-        this.tasks = response.data;
+        const response = await axios.get(`/api/mycheckin?id=${id}`);//插眼异常处理
+        this.tasks = response.data.data.tasks;
         this.isLoading = false;
       } catch (error) {
-        console.error('获取打卡任务列表失败:', error);
+        this.$message.error('打卡任务列表获取失败！')
         this.isLoading = false;
       }
     },
@@ -213,12 +215,11 @@ export default {
     },
     checkin(task) {
       this.currentTaskId = task.id;
+      this.currentTaskType = task.checkinType;
       if(task.checkinType === '人脸识别' || task.checkinType === '都'){
-        console.log("人脸识别")
         this.checkinDialogVisible = true;
       }
       if (task.checkinType === '定位打卡' || task.checkinType === '都') {
-        console.log("定位打卡")
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             async (position) => {
@@ -229,36 +230,32 @@ export default {
                 try{
                   const response = await axios.post(`/api/checkin?id=${id}`,{
                   "id":task.id,
-                  "face":null,
-                  "Latitude":this.userLatitude,
-                  "Longitude":this.userLongitude
+                  "type":"定位打卡",
+                  "face":this.photoParameter.ImageFile,
+                  "latitude":this.userLatitude,
+                  "longitude":this.userLongitude
                 });
-                if(response.data){
-                  this.$message({
-                    type: 'success',
-                    message: '打卡成功!'
-                  });
+                if(response.data.state == 1){
+                  this.$message.success('打卡成功!');
+                  this.fetchTasks();
                 }
-                //插眼
-                else{
-                  this.$message({
-                    type: 'success',
-                    message: '打卡成功!'
-                  });
+                else if(response.data.state == 3){
+                  this.$message.error('打卡失败：位置校验未通过!');
                 }
-                //插眼
+                else if(response.data.state == 4){
+                  this.$message.error('打卡失败，请稍后重试');
+                }
                 } catch(error){
-                  this.$message({
-                    type: 'success',
-                    message: '打卡成功!'
-                  });
+                  this.$message.error('请求发送失败，请检查网络或联系管理员');
+                } finally{
+                  this.userLatitude = '';
+                  this.userLongitude = '';
                 }
               }
-              // 在这里将位置信息添加到要提交的打卡数据中
             },
             (error) => {
               this.locationError = '获取位置失败';
-              this.$message.error('获取位置失败，请检查您的设备是否开启定位功能');
+              this.$message.error('获取位置失败，请重试或检查您的设备是否开启定位功能');
               console.error('获取位置失败:', error);
             },
             {
@@ -351,33 +348,12 @@ export default {
         }
     },
     async submitImage() {
-      if (await this.uploadImage(this.photoParameter.ImageFile)) {
-        this.photoParameter.showingPicture = false;
-        this.$alert('', '打卡成功！', {
-          confirmButtonText: '确定'
-        });
-        this.resetPhotoParameter();
-        this.checkinDialogVisible = false;
-        this.fetchTasks(); // 重新获取任务列表，触发分页重新计算
-      } else {
-        //插眼
-        this.$alert('', '打卡成功！', {
-          confirmButtonText: '确定'
-        });
-        /*this.$alert('请重试', '打卡失败！', {
-          confirmButtonText: '确定'
-        });*/
-        }
-    },
-
-        // 上传文件到后端
-        async uploadImage(file) {
-            const formData = new FormData();
+      const formData = new FormData();
             formData.append("id",this.currentTaskId);
-            formData.append("face", file);
-            formData.append("Latitude",this.userLatitude);
-            formData.append("Longitude",this.userLongitude);
-            console.log("上传文件到后端");
+            formData.append("type",this.currentTaskType);
+            formData.append("face", this.photoParameter.ImageFile);
+            formData.append("latitude",this.userLatitude);
+            formData.append("longitude",this.userLongitude);
             try {
                 const response = await axios.post(`/api/checkin?id=${this.$store.getters.getid}`, formData, {
                 onUploadProgress: (progressEvent) => {
@@ -386,28 +362,29 @@ export default {
                     );
                 },
                 });
-                if(response.data){
-                  this.$message({
-                    type: 'success',
-                    message: '打卡成功!'
-                  });
+                if(response.data.state == 1){
+                  this.$message.success('打卡成功!');
+                  this.filteredTasks();
+                  this.resetPhotoParameter();
+                  this.checkinDialogVisible = false;
                 }
-                //插眼
-                else{
-                  this.$message({
-                    type: 'success',
-                    message: '打卡成功!'
-                  });
+                else if(response.data.state == 2){
+                  this.$message.error('打卡失败!人脸比对未通过');
                 }
-                //插眼
-            } catch (error) {
-                this.$message({
-                    type: 'success',
-                    message: '打卡成功!'
-                  });
+                else if(response.data.state == 3){
+                  this.$message.error('打卡失败!位置校验未通过');
+                }
+                else if(response.data.state == 4){
+                  this.$message.error('打卡失败，请稍后重试');
+                }
             }
-            return 1;
-        },
+            catch {
+              this.$message.error('请求发送失败，请检查网络或联系管理员');
+            }finally{
+              this.userLatitude = '';
+              this.userLongitude = '';
+            }
+    },
         resetPhotoParameter(){
           this.photoParameter.mediaStream = null,
           this.photoParameter.uploadProgress = 0,

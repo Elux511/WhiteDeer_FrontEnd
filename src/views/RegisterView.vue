@@ -139,16 +139,20 @@ export default {
         }
         this.isLoading = false;
         },
-        getVerificationCode() {
+        async getVerificationCode() {
         if (!this.phoneReg.test(this.form.phoneNumber)) {
             this.$message.warning('请正确填写手机号');
             return;
         }
         this.countdown = 60;
         this.startCountdown();
-        //插眼
-        //axios.post(`/api/vericode?phoneNumber=${this.form.phoneNumber}`);
-        this.$message.success('已发送验证码，请注意查收')
+        try{
+            const response = await axios.post(`/api/vericode?phoneNumber=${this.form.phoneNumber}`);
+            if(response.data.state == 1){
+                this.$message.success('已发送验证码，请注意查收');
+            }
+        }catch{this.$message.warning('请求失败，请稍后重试')}
+        
         },
         startCountdown() {
         if (this.timer) {

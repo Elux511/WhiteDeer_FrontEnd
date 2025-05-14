@@ -2,7 +2,25 @@
   <div class="user-info-container">
     <div class="user-info-item">
       <span class="label">账号:</span>
-      <span class="id-value">{{ userInfo.id }}</span>
+      <span class="value">{{ userInfo.id }}</span>
+      <el-button type="text" @click="changePasswordDialogVisible = true" class="button-margin">修改密码</el-button>
+      <el-dialog title="修改密码" :visible.sync="changePasswordDialogVisible" width="30%" center>
+        <el-form>
+          <el-form-item label="请输入原密码:">
+            <el-input v-model="originPassword" prefix-icon="el-icon-lock" show-password></el-input>
+          </el-form-item>
+          <el-form-item label="请输入4-12位新密码:">
+            <el-input v-model="updatePassword" prefix-icon="el-icon-lock" show-password></el-input>
+          </el-form-item>
+          <el-form-item label="请再次输入新密码:">
+            <el-input v-model="updatePasswordAgain" prefix-icon="el-icon-lock" show-password></el-input>
+          </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+          <el-button type="primary" @click="handleChangePassword">确 定</el-button>
+          <el-button @click="cancleChangePassword">取 消</el-button>
+        </span>
+      </el-dialog>
     </div>
     <hr class="divider" />
     <div class="user-info-item">
@@ -44,7 +62,10 @@
     <div class="user-info-item">
       <span class="label">照片</span>
       <span class="value">&nbsp;</span>
-      <el-button type="text" @click="changePhotoDialogVisible = true" class="button-margin">更换照片</el-button>
+      <el-button type="text" @click="changePhotoDialogVisible = true" class="button-margin">
+        <span v-if="this.$store.getters.getFaceStatus">更换照片</span>
+        <span v-else>上传照片</span>
+      </el-button>
       <el-dialog title="修改照片" :visible.sync="changePhotoDialogVisible" width="55%" style="margin-top:-5%" center>
         <div v-if="photoParameter.cameraDevices.length > 1">
           选择调用的摄像头设备：<el-select v-model="selectedCameraDeviceId" placeholder="选择摄像头">
@@ -69,8 +90,7 @@
             <progress :value="photoParameter.uploadProgress" max="100" v-if="photoParameter.uploadProgress > 0"></progress>
           </div>
         <span slot="footer" class="dialog-footer">
-          <el-button type="primary" @click="handleChangePhoto">确 定</el-button>
-          <el-button @click="cancleChangePhoto">取 消</el-button>
+          <el-button type="primary" @click="closeChangePhotoDialog">关 闭</el-button>
         </span>
       </el-dialog>
     </div>
@@ -80,23 +100,26 @@
         <div class="placeholder" v-else>照片显示</div>
       </div>
     </div>
+    <div class="center">
+      <el-button type="primary" @click="deleteUser">删除账号</el-button>
+    </div>
   </div>
 </template>
 
 <script>
 import axios from 'axios';
-//插眼import { Message } from 'element-ui';
 
 export default {
   data() {
     return {
       userInfo: {
-        id:'12121212',
-        name:'茧之泪殇',
-        phoneNumber:'13013013130',
+        id:'',
+        name:'',
+        phoneNumber:'',
         face:null
       },
       isLoading: true,
+      changePasswordDialogVisible:false,
       changeNameDialogVisible:false,
       changePhoneDialogVisible:false,
       changePhotoDialogVisible:false,
@@ -110,12 +133,16 @@ export default {
         isCameraWorking:false,
         cameraDevices: []
       },
+      originPassword:'',
+      updatePassword:'',
+      updatePasswordAgain:'',
       updateName:'',
       updatePhone:'',
       verificationCode:'',
       phoneReg:/^1[3-9]\d{9}$/,
       vercodeReg:/^\d{6}$/,
       nameReg:/^([\u4e00-\u9fa5]|\w){2,8}$/,
+      codeReg:/^[a-zA-Z0-9_!?,.@#$%^&*+-=()[\]{}~:;'"`<>|/\\]{4,12}$/,
       countdown: 0,
       timer:null,
       selectedCameraDeviceId: '' //存储用户选择的摄像头设备ID
@@ -128,17 +155,18 @@ export default {
   methods: {
     async fetchUserInfo() {
       try {
-        const id = this.$store.getters.getid;
-        const response = await axios.get(`/api/myinfo?id=${id}`, {
-          responseType: 'blob' // 设置响应类型为blob，以便正确处理二进制数据
-        });
-        this.userInfo = response.data;
-        
-      } //插眼
-      catch (error) {
-        console.error('获取用户信息失败', error);
-        /*Message.error('获取用户信息失败，请检查网络或联系管理员');
-        this.isLoading = false;*/
+        this.userInfo.id = this.$store.getters.getid;
+        const response = await axios.get(`/api/myinfo?id=${this.userInfo.id}`);
+        if(response.data.state == 1){
+          //插眼，待测试
+          this.userInfo = response.data.data;
+        }
+        else{
+          this.$message.error('获取用户信息失败');
+        }
+      }catch {
+        this.$message.error('请求发送失败，请检查网络或联系管理员');
+        this.isLoading = false;
       }
     },
     getVerificationCode() {
@@ -149,6 +177,53 @@ export default {
         this.countdown = 60;
         this.startCountdown();
         axios.post(`/api/vericode?phoneNumber=${this.updatePhone}`);
+    },
+    async handleChangePassword(){
+      if(!this.codeReg.test(this.originPassword)){
+        this.$message.warning('请正确输入原密码！');
+        return;
+      }
+      if(!this.codeReg.test(this.updatePassword)){
+        this.$message.warning('请正确输入新密码！');
+        return;
+      }
+      if(this.updatePassword !== this.updatePasswordAgain){
+        this.$message.warning('两次输入密码不一致！');
+        return;
+      }
+      if(this.originPassword === this.updatePassword){
+        this.$message.warning('请勿修改为同一个密码！');
+        return;
+      }
+      try{
+        const res = await axios.post('/api/login2',{
+          "id":this.userInfo.id,
+          "password":this.originPassword
+        });
+        if(res.data.state == 1){
+          try{
+            const response = await axios.patch('/api/changepassword',{
+              "id":this.userInfo.id,
+              "password":this.updatePassword
+            });
+            if(response.data.state == 1){
+              this.$message.success('修改成功！');
+              this.cancleChangePassword();
+            }
+            else if(response.data.state == 2){
+              this.$message.error('修改密码失败，请稍后重试');
+            }
+          }catch{
+            this.$message.error('请求发送失败，请检查网络或联系管理员');
+          }
+        }
+        if(res.data.state == 3){
+          this.$message.error('原密码错误!');
+          return;
+        }
+      }catch{
+        this.$message.error('请求发送失败，请检查网络或联系管理员');
+      }
     },
     async handleChangeName(){
       if(!this.nameReg.test(this.updateName)){
@@ -162,14 +237,15 @@ export default {
       const id = this.$store.getters.getid;
       await axios.patch('/api/changename',{
         "id":id,
-        "newname":this.updateName
+        "name":this.updateName
       }).then(response => {
         console.log(response);
         this.$message.success('修改成功！');
-      this.changeNameDialogVisible = false;
+        this.cancleChangeName();
+        this.fetchUserInfo();
       }).catch(error => {
         console.log(error);
-        this.$message.error('修改失败！');
+        this.$message.error('修改失败，请稍后重试');
       });
     },
     async handleChangePhone() {
@@ -185,29 +261,40 @@ export default {
         this.$message.warning('请正确填写验证码');
         return;
       }
-      const id = this.$store.getters.getid;
-      await axios.post('/api/checkvericode',{
-        "phoneNumber":this.updatePhone,
-        "vericode":this.verificationCode
-      });//插眼,待完善
-      await axios.patch('/api/changephone',{
-        "id":id,
-        "phoneNumber":this.updatePhone
-      }).then(response => {
-        console.log(response);
-        this.$message.success('修改成功！');
-        this.changePhoneDialogVisible = false;
-      }).catch(error => {
-        console.log(error);
-        this.$message.error('修改失败！');
-      })
-    },
-    handleChangePhoto() {
-      if(this.photoParameter.isCameraWorking){
-        this.stopCamera();
+      try{
+        const res = await axios.post('/api/checkvericode',{
+          "phoneNumber":this.updatePhone,
+          "vericode":this.verificationCode
+        });
+        if(res.data.state == 2){
+          this.$message.error('验证码错误！');
+          return;
+        }
+      }catch{
+        this.$message.error('请求发送失败，请检查网络或联系管理员');
       }
-      this.resetPhotoParameter();
-      this.changePhotoDialogVisible = false;
+      try{
+        const response = await axios.patch('/api/changephone',{
+        "id":this.userInfo.id,
+        "phoneNumber":this.updatePhone
+      });
+      if(response.data.state == 1){
+        this.$message.success('修改成功！');
+        this.cancleChangePhone();
+        this.fetchUserInfo();
+      }
+      else if(response.data.state == 2){
+        this.$message.error('该手机号已绑定其他账号！');
+      }
+      }catch{
+        this.$message.error('请求发送失败，请检查网络或联系管理员');
+      }
+    },
+    cancleChangePassword(){
+      this.originPassword = '';
+      this.updatePassword = '';
+      this.updatePasswordAgain = '';
+      this.changePasswordDialogVisible = false;
     },
     cancleChangeName(){
       this.updateName = '';
@@ -218,7 +305,7 @@ export default {
       this.verificationCode = '';
       this.changePhoneDialogVisible = false;
     },
-    cancleChangePhoto(){
+    closeChangePhotoDialog(){
       if(this.photoParameter.isCameraWorking){
         this.stopCamera();
       }
@@ -252,14 +339,14 @@ export default {
       }
     },
     async startCamera() {
-            try {
-                this.photoParameter.mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                this.$refs.video.srcObject = this.photoParameter.mediaStream;
-                this.$refs.video.play();
-                this.photoParameter.isCameraWorking = true;
-            } catch (error) {
-                console.error('摄像头调用失败:', error);
-            }
+      try {
+        this.photoParameter.mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        this.$refs.video.srcObject = this.photoParameter.mediaStream;
+        this.$refs.video.play();
+        this.photoParameter.isCameraWorking = true;
+      } catch (error) {
+          console.error('摄像头调用失败:', error);
+        }
     },
         stopCamera() {
             if (this.photoParameter.mediaStream) {
@@ -314,29 +401,31 @@ export default {
             }
         },
         async submitImage(){
+          const formData = new FormData();
+          formData.append("id",this.$store.getters.getid);
+          formData.append("face", this.photoParameter.ImageFile);
+          try {
+            const response = await axios.patch("/api/setface", formData, {
+              onUploadProgress: (progressEvent) => {
+                this.photoParameter.uploadProgress = Math.round(
+                (progressEvent.loaded / progressEvent.total) * 100
+                );
+              },
+            });
+            if(response.data.state == 1){
+              this.$message.success('上传成功！');
+            }
+            else if(response.data.state == 2){
+              this.$message.error('照片保存失败！');
+            }
+          } catch {
+            this.$message.error('请求发送失败，请检查网络或联系管理员');
+            //插眼
+          }
             await this.uploadImage(this.photoParameter.ImageFile);
             this.photoParameter.showingPicture = false;
         },
 
-        // 上传文件到后端
-        async uploadImage(file) {
-            const formData = new FormData();
-            formData.append("id",this.$store.getters.getid);
-            formData.append("face", file);
-            console.log("上传文件到后端");
-            try {
-                const response = await axios.patch("/api/setface", formData, {
-                onUploadProgress: (progressEvent) => {
-                    this.photoParameter.uploadProgress = Math.round(
-                    (progressEvent.loaded / progressEvent.total) * 100
-                    );
-                },
-                });
-                console.log("上传成功", response.data);
-            } catch (error) {
-                console.error("上传失败", error);
-            }
-        },
         resetPhotoParameter(){
           this.photoParameter.mediaStream = null,
           this.photoParameter.uploadProgress = 0,
@@ -345,6 +434,28 @@ export default {
           this.photoParameter.isCaptured = false,
           this.photoParameter.showingPicture = false,
           this.photoParameter.isCameraWorking = false
+        },
+        deleteUser(){
+          this.$confirm('此操作将删除此账号所有信息，是否继续?', '⚠警告！', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(async () => {
+            try {
+              const response = await axios.delete(`/api/deleteuser?id=${this.userInfo.id}`);
+              if(response.data.state == 1){
+                this.$message.success('删除账号成功，自动返回首页');
+                this.$store.commit('Signout');
+              }
+              else if(response.data.state == 2){
+                this.$message.info('删除账号失败,请稍后重试');
+              }
+            } catch (error) {
+              this.$message.error('请求发送失败，请检查网络或联系管理员');
+            }
+          }).catch(() => {
+            this.$message('已取消操作');
+          });
         }
   }
 };
@@ -373,9 +484,6 @@ export default {
   text-align: center;
 }
 
-.id-value{
-  margin-left: 165px;
-}
 
 .button-margin {
   margin-left: 10px;
@@ -462,6 +570,13 @@ export default {
 .el-dialog__footer {
   padding: 0px;
   margin:0px;
+}
+
+
+.center{
+  padding-top: 80px;
+  display: flex;
+  justify-content: center;
 }
 
 </style>    

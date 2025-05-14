@@ -12,13 +12,17 @@
                 </el-form-item>
                   <el-form-item>
                 <el-row :gutter="15">
-                  <el-col :span="14">
+                  <el-col :span="13">
                     <el-input v-model="form1.verificationCode" placeholder="请输入验证码" prefix-icon="el-icon-lock-outline"></el-input>
                   </el-col>
-                  <el-col :span="9">
+                  <el-col :span="10" style="display: flex;">
                     <el-button @click="getVerificationCode" :loading="countdown > 0">
                       {{ countdown > 0? countdown : '获取验证码' }}
                     </el-button>
+                    <div class="tooltip">
+                      <span style="margin-left: 10px;" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">?</span>
+                      <span v-if="showTooltip" class="tooltiptext">次数限制：每小时5次，每天10次</span>
+                    </div>
                   </el-col>
                 </el-row>
               </el-form-item>
@@ -72,7 +76,8 @@ export default {
       phoneReg:/^1[3-9]\d{9}$/,
       vercodeReg:/^\d{6}$/,
       zhanghaoReg:/^\d{8}$/,
-      codeReg:/^[a-zA-Z0-9_!?,.@#$%^&*+-=()[\]{}~:;'"`<>|/\\]{4,12}$/
+      codeReg:/^[a-zA-Z0-9_!?,.@#$%^&*+-=()[\]{}~:;'"`<>|/\\]{4,12}$/,
+      showTooltip:false,
     };
   },
   mounted() {
@@ -147,7 +152,8 @@ export default {
       }
       this.isLoading = true;
         //插眼
-        this.$store.commit('Login')
+      //this.$store.commit('Login');
+      console.log("login")
       try{
         const response = await axios.post('/api/login2',{
           "id":this.form2.zhanghao,
@@ -155,6 +161,7 @@ export default {
         });
         if(response.data.state == 1){
           this.$message.success('登录成功!');
+          this.$store.commit('Login');
           this.$store.commit('setid',this.form2.zhanghao);
           this.$store.commit('setFaceStatus',response.data.data.haveface);
           this.saveDataToLocalStorage('loginInfoKey2',{
@@ -164,10 +171,12 @@ export default {
         }
         if(response.data.state == 2){
           this.$message.error('该账号未注册!');
+          this.isLoading = false;
           return;
         }
         if(response.data.state == 3){
           this.$message.error('密码错误!');
+          this.isLoading = false;
           return;
         }
       }catch{
@@ -175,15 +184,19 @@ export default {
       }
         this.isLoading = false;
     },
-    getVerificationCode() {
+    async getVerificationCode() {
       if(!this.phoneReg.test(this.form1.phoneNumber)) {
         this.$message.warning('请正确填写手机号');
         return;
       }
       this.countdown = 60;
       this.startCountdown();
-      //插眼
-      //axios.post(`/api/vericode?phoneNumber=${this.form1.phoneNumber}`);
+      try{
+            const response = await axios.post(`/api/vericode?phoneNumber=${this.form1.phoneNumber}`);
+            if(response.data.state == 1){
+                this.$message.success('已发送验证码，请注意查收');
+            }
+        }catch{this.$message.warning('请求失败，请稍后重试')}
     },
     startCountdown() {
       if (this.timer) {
@@ -308,5 +321,45 @@ export default {
 img{
   max-width: 80%;
   max-height: 20%;
+}
+
+
+
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltiptext {
+  width: 120px;
+  background-color: black;
+  color: white;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px;
+  position: absolute;
+  z-index: 100;
+  bottom: 100%;
+  left: -350%;
+  margin-left: -60px;
+  opacity: .7;
+  transition: opacity 0.3s;
+}
+
+.tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.tooltip:hover.tooltiptext {
+  visibility: visible;
+  opacity: 1;
 }
 </style>

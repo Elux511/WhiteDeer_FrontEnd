@@ -26,26 +26,17 @@ const routes = [
   {
     path: '/login',
     name:'login',
-    component: () => import('../views/DBLoginView.vue')
+    component: () => import('../views/LoginView.vue')
   },
   {
     path: '/register',
     name:'register',
-    component: () => import('../views/DBRegisterView.vue')
+    component: () => import('../views/RegisterView.vue')
   },
   {
     path:'/user',
     name:'user',
     component: () => import('../views/User/UserView.vue')
-  },
-  {
-    path:'/checkin',
-    name:'checkin',
-    component: () => import('../views/CheckinView.vue')
-  },
-  {
-    path:'/home/manager',
-    component: () => import('../views/ManagerView.vue')
   },
   {
     path:'/404',
