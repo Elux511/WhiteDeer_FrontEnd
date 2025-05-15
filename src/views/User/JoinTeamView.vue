@@ -15,7 +15,7 @@
         placeholder="创建终止日期"
         class="input-width"
       ></el-date-picker>
-      <el-button type="primary" @click="searchTeams">查询</el-button>
+      <el-button type="primary" :loading="isLoading" @click="searchTeams">查询</el-button>
       <el-button type="primary" @click="createTeamParameter.createTeamDialogVisible = true">创建我的团队</el-button>
       <el-dialog title="创建团队" :visible.sync="createTeamParameter.createTeamDialogVisible" width="30%" center>
         <el-form>
@@ -30,7 +30,7 @@
           </el-form-item>
         </el-form>
         <span slot="footer" class="dialog-footer">
-          <el-button type="primary" @click="handleCreateTeam">确 定</el-button>
+          <el-button type="primary" :loading="isLoading" @click="handleCreateTeam">创 建</el-button>
           <el-button @click="cancleCreateTeam">取 消</el-button>
         </span>
       </el-dialog>
@@ -43,7 +43,7 @@
       <el-table-column prop="createTime" label="创建时间" width="200"></el-table-column>
       <el-table-column label="操作">
         <template slot-scope="scope">
-          <el-button type="text" v-if="scope.row.isFull === '否'" @click="joinTeam(scope.row)">加入</el-button>
+          <el-button type="text" v-if="scope.row.isFull === '否'" :loading="isLoading" @click="joinTeam(scope.row)">加入</el-button>
           <span v-if="scope.row.isFull === '是'" style="color: blue;">已满员</span>
         </template>
       </el-table-column>
@@ -91,7 +91,7 @@ export default {
           createTime:'2024-10-01 09:15:00'
         }
       ],
-
+      isLoading: false,
       totalCount: 0,
       pageSize: 6,
       currentPage: 1,
@@ -115,6 +115,7 @@ export default {
       }
     },
     async searchTeams() {
+      this.isLoading = true;
       try {
         const response = await axios.get('/api/searchgroup', {
           params: {
@@ -124,10 +125,16 @@ export default {
             end:this.endDate
           },
         });
-        this.groups = response.data.groups;
-        // 这里无需额外操作，因为 computed 会自动重新计算
-      } catch (error) {
-        console.error('查询团队失败', error);
+        if(response.data.state == 1){
+          this.groups = response.data.groups;
+        }
+        else if(response.data.state == 2){
+          this.$message.error('搜索团队失败，请稍后重试');
+        }
+      } catch {
+        this.$message.error('请求发送失败，请检查网络或联系管理员');
+      } finally{
+        this.isLoading = false;
       }
     },
     resetFilters() {
@@ -144,21 +151,24 @@ export default {
           cancelButtonText: '取消',
           type: 'warning'
         }).then(async () => {
+          this.isLoading = true;
           try {
             const id = this.$store.getters.getid;
             const groupid = row.groupId;
             const response = await axios.post('/api/joingroup', {
               "id":id,
-              "groupid":groupid
+              "groupId":groupid
             });
             if(response.data.state == 1){
               this.$message.success('加入团队成功!');
             }
-            else{
-              this.$message.info('加入团队失败!');
+            else if(response.data.state == 2){
+              this.$message.error('加入团队失败!');
             }
-          } catch (error) {
+          } catch {
             this.$message.error('请求发送失败，请检查网络或联系管理员');
+          } finally{
+            this.isLoading = false;
           }
         }).catch(() => {
           this.$message('已取消加入');
@@ -182,22 +192,25 @@ export default {
         this.$message.warning("团队简介长度超出限制！");
         return;
       }
+      this.isLoading = true;
       // 新接口
       try{
         const response = await axios.post('/api/creategroup',{
-          "groupname":this.createTeamParameter.groupName,
-          "maxmember":this.createTeamParameter.groupNumberMaximum,
+          "groupName":this.createTeamParameter.groupName,
+          "maxMember":this.createTeamParameter.groupNumberMaximum,
           "introduction":this.createTeamParameter.groupIntroduction
         });
         if(response.data.state == 1){
           this.$message.success('创建团队成功！');
           this.cancleCreateTeam();
         }
-        else{
-          this.$message.error('创建团队失败！')
+        else if(response.data.state == 2){
+          this.$message.error('创建团队失败！');
         }
-      }catch {
+      } catch {
         this.$message.error('请求发送失败，请检查网络或联系管理员');
+      } finally{
+        this.isLoading = false;
       }
     },
     cancleCreateTeam() {

@@ -29,6 +29,7 @@
                 type="primary"
                 @click="checkin(task)"
                 :disabled="task.status === 'completed'"
+                :loading="isLoading"
               >
                 {{ task.status === 'completed'? '已打卡' : '打卡' }}
               </el-button>
@@ -69,7 +70,7 @@
           <button @click="startCamera">启动摄像头</button>
           <button @click="stopCamera">关闭摄像头</button>
           <button v-if="!photoParameter.showingPicture" @click="captureImage">拍照</button>
-          <button v-if="photoParameter.isCaptured" @click="submitImage">提交</button>
+          <button v-if="photoParameter.isCaptured" :loading="isLoading" @click="submitImage">提交</button>
           <button v-if="photoParameter.showingPicture" @click="startAgain">重拍</button>
           <progress :value="photoParameter.uploadProgress" max="100" v-if="photoParameter.uploadProgress > 0"></progress>
         </div>
@@ -134,7 +135,6 @@ export default {
       timer:null,
       filterStatus: 'all', //选择的状态
       searchKeyword: '', //搜索栏输入
-      isLoading: true,
       photoParameter:{
         mediaStream: null,
         uploadProgress: 0,
@@ -145,6 +145,7 @@ export default {
         isCameraWorking:false,
         cameraDevices: []
       },
+      isLoading:false,
       checkinDialogVisible:false,
       currentTaskId:'', //当前执行打卡的任务id
       currentTaskType:'',//这两个主要是在dialog里不好传参
@@ -154,7 +155,7 @@ export default {
       userLatitude: null, // 用户的纬度
       userLongitude: null, // 用户的经度
       locationError: null, // 存储位置获取的错误信息
-      locationSuccess:true 
+      locationSuccess:true
     };
   },
   computed: {
@@ -202,12 +203,15 @@ export default {
     async fetchTasks() {
       try {
         const id = this.$store.getters.getid;
-        const response = await axios.get(`/api/mycheckin?id=${id}`);//插眼异常处理
-        this.tasks = response.data.data.tasks;
-        this.isLoading = false;
-      } catch (error) {
-        this.$message.error('打卡任务列表获取失败！')
-        this.isLoading = false;
+        const response = await axios.get(`/api/mycheckin?id=${id}`);
+        if(response.data.state == 1){
+          this.tasks = response.data.data.checkinList;
+        }
+        else if(response.data.state == 2){
+          this.$message.error('获取打卡任务失败，请稍后重试');
+        }
+      } catch {
+        this.$message.error('请求发送失败，请检查网络或联系管理员');
       }
     },
     shareQrCode(task) {
@@ -227,6 +231,7 @@ export default {
               this.userLongitude = position.coords.longitude;
               if(task.checkinType === '定位打卡'){
                 const id = this.$store.getters.getid;
+                this.isLoading = true;
                 try{
                   const response = await axios.post(`/api/checkin?id=${id}`,{
                   "id":task.id,
@@ -245,11 +250,12 @@ export default {
                 else if(response.data.state == 4){
                   this.$message.error('打卡失败，请稍后重试');
                 }
-                } catch(error){
+                } catch{
                   this.$message.error('请求发送失败，请检查网络或联系管理员');
                 } finally{
                   this.userLatitude = '';
                   this.userLongitude = '';
+                  this.isLoading = false;
                 }
               }
             },
@@ -354,6 +360,7 @@ export default {
             formData.append("face", this.photoParameter.ImageFile);
             formData.append("latitude",this.userLatitude);
             formData.append("longitude",this.userLongitude);
+            this.isLoading = true;
             try {
                 const response = await axios.post(`/api/checkin?id=${this.$store.getters.getid}`, formData, {
                 onUploadProgress: (progressEvent) => {
@@ -365,8 +372,7 @@ export default {
                 if(response.data.state == 1){
                   this.$message.success('打卡成功!');
                   this.filteredTasks();
-                  this.resetPhotoParameter();
-                  this.checkinDialogVisible = false;
+                  this.close();
                 }
                 else if(response.data.state == 2){
                   this.$message.error('打卡失败!人脸比对未通过');
@@ -377,12 +383,10 @@ export default {
                 else if(response.data.state == 4){
                   this.$message.error('打卡失败，请稍后重试');
                 }
-            }
-            catch {
+            } catch {
               this.$message.error('请求发送失败，请检查网络或联系管理员');
-            }finally{
-              this.userLatitude = '';
-              this.userLongitude = '';
+            } finally{
+              this.isLoading = false;
             }
     },
         resetPhotoParameter(){
@@ -401,6 +405,8 @@ export default {
             this.stopCamera();
           }
           this.resetPhotoParameter();
+          this.userLatitude = '';
+          this.userLongitude = '';
         },
         prevPage() {
           if (this.currentPage > 1) {

@@ -77,7 +77,7 @@ export default {
       vercodeReg:/^\d{6}$/,
       zhanghaoReg:/^\d{8}$/,
       codeReg:/^[a-zA-Z0-9_!?,.@#$%^&*+-=()[\]{}~:;'"`<>|/\\]{4,12}$/,
-      showTooltip:false,
+      showTooltip:false
     };
   },
   mounted() {
@@ -117,29 +117,40 @@ export default {
           "phoneNumber":this.form1.phoneNumber,
           "vericode":this.form1.verificationCode
         });
-        if(res.data.state != 1){
+        if(res.data.state == 1){
+          try{
+            const response = await axios.post('/api/login1',{
+              "phoneNumber":this.form1.phoneNumber
+            });
+            if(response.data.state == 1){
+              this.$message.success('登录成功!');
+              sessionStorage.setItem("isLogin",JSON.stringify(true));
+              this.$store.commit('Login');
+              this.$router.push('/user');
+              this.$store.commit('setid',response.data.data.id);
+              this.$store.commit('setFaceStatus',response.data.data.haveface);
+              this.saveDataToLocalStorage('loginInfoKey1',{
+                phoneNumber:this.form1.phoneNumber
+              })
+            }
+            else if(response.data.status == 2){
+              this.$message.error('手机号未注册!');
+            }
+          } catch{
+            this.$message.error('请求发送失败，请检查网络或联系管理员');
+          }
+        }
+        else if(res.data.state == 2){
           this.$message.warning('验证码错误！');
-          return;
         }
-        const response = await axios.post('/api/login1',{
-          "phoneNumber":this.form1.phoneNumber
-        });
-        if(response.data.status == 1){
-          this.$message.success('登录成功!');
-          this.$store.commit('Login');
-          this.$store.commit('setid',response.data.data.id);
-          this.$store.commit('setFaceStatus',response.data.data.haveface);
-          this.saveDataToLocalStorage('loginInfoKey1',{
-            phoneNumber:this.form1.phoneNumber
-          })
+        else if(res.data.state == 3){
+          this.$message.warning('验证码已过期！');
         }
-        if(response.data.status == 2){
-          this.$message.error('手机号未注册!');
-        }
-      }catch{
-        this.$message.error('登录失败!请稍后重试');
+      } catch{
+        this.$message.error('请求发送失败，请检查网络或联系管理员');
+      } finally{
+        this.isLoading = false;
       }
-      this.isLoading = false;
     },
     async handleSubmit2() {
       if (!this.zhanghaoReg.test(this.form2.zhanghao)) {
@@ -151,9 +162,6 @@ export default {
         return;
       }
       this.isLoading = true;
-        //插眼
-      //this.$store.commit('Login');
-      console.log("login")
       try{
         const response = await axios.post('/api/login2',{
           "id":this.form2.zhanghao,
@@ -161,7 +169,9 @@ export default {
         });
         if(response.data.state == 1){
           this.$message.success('登录成功!');
+          sessionStorage.setItem("isLogin",JSON.stringify(true));
           this.$store.commit('Login');
+          this.$router.push('/user');
           this.$store.commit('setid',this.form2.zhanghao);
           this.$store.commit('setFaceStatus',response.data.data.haveface);
           this.saveDataToLocalStorage('loginInfoKey2',{
@@ -171,18 +181,17 @@ export default {
         }
         if(response.data.state == 2){
           this.$message.error('该账号未注册!');
-          this.isLoading = false;
           return;
         }
         if(response.data.state == 3){
           this.$message.error('密码错误!');
-          this.isLoading = false;
           return;
         }
-      }catch{
-        this.$message.error('登录失败!');
-      }
+      } catch{
+        this.$message.error('请求发送失败，请检查网络或联系管理员');
+      } finally{
         this.isLoading = false;
+      }
     },
     async getVerificationCode() {
       if(!this.phoneReg.test(this.form1.phoneNumber)) {
@@ -192,11 +201,16 @@ export default {
       this.countdown = 60;
       this.startCountdown();
       try{
-            const response = await axios.post(`/api/vericode?phoneNumber=${this.form1.phoneNumber}`);
-            if(response.data.state == 1){
-                this.$message.success('已发送验证码，请注意查收');
-            }
-        }catch{this.$message.warning('请求失败，请稍后重试')}
+        const response = await axios.post(`/api/vericode?phoneNumber=${this.form1.phoneNumber}`);
+        if(response.data.state == 1){
+          this.$message.success('已发送验证码，请注意查收');
+        }
+        else if(response.data.state == 2){
+          this.$message.error('验证码发送失败，请稍后重试');
+        }
+      }catch{
+        this.$message.error('请求发送失败，请检查网络或联系管理员');
+      }
     },
     startCountdown() {
       if (this.timer) {
@@ -210,10 +224,6 @@ export default {
           this.countdown--;
         }
       }, 1000);
-    },
-    goToScanLogin() {
-      // 这里可添加跳转逻辑，目前先提示
-      this.$message.info('暂未实现，敬请期待');
     },
     handleResize() {
       const logoImg = document.getElementById('logo-img');

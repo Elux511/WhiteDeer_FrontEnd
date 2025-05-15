@@ -105,7 +105,7 @@
     data() {
       return {
         activeMenu: 'checkin',
-        currentComponent: MyCheckin,
+        currentComponent: MyCheckin,//插眼
         serverTime: null,
       timeDiff: 0,
       loading: true,
@@ -161,10 +161,8 @@
       return this.serverTime.getSeconds() * 6
     }
   },
-  created(){
-    this.checkFace();
-  },
   mounted() {
+    this.checkFace();
     this.syncServerTime();
     this.enumerateCameras();
     // 每秒更新一次时间
@@ -181,7 +179,7 @@
   },
     methods: {
       checkFace(){
-        if(!this.$store.getters.getFaceStatus){
+        if(!this.$store.getters.getFaceStatus && this.$store.getters.getLoginState){
           this.$confirm("检测到您还未上传人脸照片，是否立即前往上传？", '提示', {
             confirmButtonText: '立即上传',
             cancelButtonText: '稍后上传',
@@ -192,7 +190,7 @@
       async syncServerTime() {
       try {
         // 替换为您的实际服务器时间API
-        const response = await axios.get('/api/time')
+        const response = await axios.get('/api/time');
         
         if (!response.ok) {
           throw new Error(`服务器响应错误: ${response.status}`)
@@ -216,7 +214,7 @@
         this.serverTime = new Date()
         
         // 显示错误提示插眼
-        //this.$message && this.$message.error('服务器时间获取失败，使用本地时间')
+        this.$message && this.$message.error('服务器时间获取失败，使用本地时间')
       }
     },
       handleMenuSelect(key) {
@@ -245,7 +243,9 @@
           type: 'warning'
         }).then(() => {
           this.$message.success('注销成功!');
+          sessionStorage.setItem("isLogin",JSON.stringify(false));
           this.$store.commit('Signout');
+          this.$router.push('/login')
         }).catch(() => {
           this.$message.info('已取消注销');
         });
@@ -338,28 +338,17 @@
                     );
                   }
                 });
-                if(response.data.status !== 1) {return}
-                this.$confirm("人脸照片上传成功！","上传成功",{
-                  confirmButtonText: '确定',
-                  type: 'info'
-                }).then(() => {
+                if(response.data.status == 1) {
+                  this.$message.success('人脸照片上传成功！');
                   this.$store.commit('setFaceStatus',true);
                   this.faceDialogVisible = false;
-                  this.resetPhotoParameter();
-                }).catch(() =>{
-                  this.$store.commit('setFaceStatus',true);
-                  this.faceDialogVisible = false;
-                  this.resetPhotoParameter();
-                })
-            } catch (error) {
-              this.$confirm("人脸照片上传失败！请重试！","上传失败",{
-                  confirmButtonText: '确定',
-                  type: 'info'
-                }).then(() => {
-                  this.resetPhotoParameter();
-                }).catch(() =>{
-                  this.resetPhotoParameter();
-                })
+                  this.close();
+                }
+                else if(response.data.state == 2){
+                  this.$message.error('人脸照片上传失败，请稍后重试');
+                }
+            } catch {
+              this.$message.error('请求发送失败，请检查网络或联系管理员');
             }
     },
 

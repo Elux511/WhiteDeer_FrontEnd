@@ -336,7 +336,7 @@ export default {
       joinedPage: 1,
       managedPage: 1,
       pageSize: 3, // 每页显示3条数据
-      isLoading: true,
+      //isLoading: false,
       memberList: [], // 存储当前页要展示的成员信息
       memberCurrentPage: 1, // 当前成员信息列表的页码
       memberPageSize: 4, // 每页显示的成员数量
@@ -453,8 +453,7 @@ export default {
     },
   methods: {
     async getTaskDetail(row){
-      try{//插眼
-        this.taskDetailsDialogVisible = true;
+      try{
         const response = await axios.get(`/api/task?id=${row.id}`);
         if(response.data.state == 1){
           this.taskDetailsDialogVisible = true;
@@ -463,22 +462,22 @@ export default {
         else if(response.data.state == 2){
           this.$message.error('获取任务详情失败');
         }
-      }catch{
+      } catch{
         this.$message.error('请求发送失败，请检查网络或联系管理员')
       }
     },
     async getGroupInfo(groupId){
       this.groupInfoDialogVisible = true;
       try{
-        const response = await axios.get(`/api/group?groupid=${groupId}`);
+        const response = await axios.get(`/api/group?groupId=${groupId}`);
         if(response.data.state == 1){
           this.currentTeam = response.data.data;
         }
-        else{
+        else if(response.data.state == 2){
           this.$message.error('获取团队信息失败！');
         }
-      }catch{
-        this.$message.error('请求发送失败，请检查网络或联系管理员')
+      } catch{
+        this.$message.error('请求发送失败，请检查网络或联系管理员');
       }
       
     },
@@ -490,7 +489,7 @@ export default {
         if(joinedResponse.data.state == 1){
           this.allJoinedTeams = joinedResponse.data.data.joinedGroups || [];
         }
-        else{
+        else if(joinedResponse.data.state == 2){
           this.$message.error('获取加入团队信息失败！');
         }
 
@@ -499,13 +498,11 @@ export default {
         if(managedResponse.data.state == 1){
           this.allManagedTeams = managedResponse.data.data.manegerGroups || [];
         }
-        else{
+        else if(managedResponse.data.state == 2){
           this.$message.error('获取管理团队信息失败！');
         }
-        this.isLoading = false;
-      } catch (error) {
-        this.$message.error('请求发送失败，请检查网络或联系管理员')
-        this.isLoading = false;
+      } catch {
+        this.$message.error('请求发送失败，请检查网络或联系管理员');
       }
     },
     async handleExit(row){
@@ -518,15 +515,16 @@ export default {
           try{
             const response = await axios.post('/api/quitgroup',{
             "id":id,
-            groupid:row.id
-          })
+            "groupId":row.id
+          });
           if(response.data.state == 1){
             this.$message.success('退出团队成功！');
+            this.fetchAllTeams();
           }
-          else{
+          else if(response.data.state == 2){
             this.$message.error('退出团队失败！');
           }
-          }catch{
+          } catch{
             this.$message.error('请求发送失败，请检查网络或联系管理员');
           }
         }).catch(() => {
@@ -765,19 +763,20 @@ export default {
     },
 
     deleteGroup(row){
-      this.$confirm("是否确定将解散团队"+row.name+",这将清除所有有关信息", '提示', {
+      this.$confirm("是否确定将解散团队"+row.name, '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
         }).then(async () => {
           try {
-            const id = row.id;
-            const response = await axios.delete(`/api/deletegroup?id=${id}`);
+            const id = this.$store.getters.getid;
+            const groupid = row.id;
+            const response = await axios.delete(`/api/deletegroup?userId=${id}&groupId=${groupid}`);
             if(response.data.state == 1){
               this.$message.success('解散团队成功!');
               this.fetchAllTeams();
             }
-            else{
+            else if(response.data.state == 2){
               this.$message( '团队解散失败!');
             }
           } catch {
@@ -798,57 +797,47 @@ export default {
             const id = row.id;
             const groupid = this.currentTeamId;
             const response = await axios.post('/api/removesb', {
-              id:id,
-              groupid:groupid
+              "id":id,
+              "groupId":groupid
             });
-            //待完善
-            if(response.data){
-              this.$message({
-                type: 'success',
-                message: '移除成功!'
-              });
+            if(response.data.state == 1){
+              this.$message.success('移除成功!');
               this.getGroupInfo(this.currentTeamId);
             }
-            else{
-              this.$message({
-                type: 'info',
-                message: '移除失败!'
-              });
+            else if(response.data.state == 2){
+              this.$message.error( '移除失败!');
             }
-          } catch (error) {
-            console.error('移除失败', error);
+          } catch {
+            this.$message.error('请求发送失败，请检查网络或联系管理员');
           }
         }).catch(() => {
-          this.$message({
-            type: 'info',
-            message: '已取消移除'
-          });
+          this.$message.error('已取消移除');
         });
-    
     },
     async deleteTask(row) {
       const taskId = row.id;
       this.$confirm("是否确定删除"+row.name+"任务？", '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(async ()=>{
-          try {
-          await axios.delete('/api/deletetask',{
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(async ()=>{
+        try {
+          const response = await axios.delete('/api/deletetask',{
             params:{"id":taskId}
           });
-          this.$message.success('打卡任务已成功删除');
-          // 重新获取团队信息更新currentTeam
-          await this.getGroupInfo(this.currentTeamId); 
-      } catch (error) {
-          this.$message.error('删除打卡任务失败，请重试');
-      }
-        }).catch(() => {
-          this.$message({
-            type: 'info',
-            message: '已取消移除'
-          });
-        });
+          if(response.data.state == 1){
+            this.$message.success('打卡任务删除成功');
+            this.getGroupInfo(this.currentTeamId);
+            }
+          else if(response.data.state == 2){
+            this.$message.error('打卡任务删除失败');
+          }
+        } catch {
+          this.$message.error('请求发送失败，请检查网络或联系管理员');
+        }
+      }).catch(() => {
+        this.$message.info( '已取消移除');
+      });
     },
     async handlePostTask(){
       if (this.newTask.name.length > 15
@@ -909,24 +898,17 @@ export default {
               "Longitude":this.newTask.Longitude,
               "accuracy": this.newTask.accuracy.replace('m', '')
             });
-            //待完善
-            if(response.data){
-              this.$message({
-                type: 'success',
-                message: '发布打卡任务成功!'
-              });
+            if(response.data.state == 1){
+              this.$message.success('发布打卡任务成功!');
+              this.getGroupInfo(this.currentTeamId);
+              this.cancelPostTask();
             }
-            else{
-              this.$message({
-                type: 'info',
-                message: '发布打卡任务失败!'
-              });
+            else if(response.data.state == 2){
+              this.$message.error('发布打卡任务失败!');
             }
-          } catch (error) {
-            console.error('发布打卡任务失败', error);
+          } catch {
+            this.$message.error('请求发送失败，请检查网络或联系管理员');
           }
-      this.postTaskDialogVisible = false;
-      this.resetNewTask();
     }
 
   }

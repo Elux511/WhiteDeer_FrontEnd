@@ -19,6 +19,17 @@ export default {
     UserView,
     NotFoundView
   },
+    mounted(){
+      if(JSON.parse(sessionStorage.getItem('isLogin'))){
+        this.$store.commit('Login')
+      }
+      else{
+        this.$store.commit('Signout')
+      }
+    },
+    
+    methods:{
+    },
   computed: {
     ...mapState(['isLogin','isNotFound'])
   },
@@ -34,11 +45,13 @@ export default {
       if (newValue) {
         this.showHomeView = false;
         this.showUserView = true;
-      } else {
+      } 
+      else {
         this.showHomeView = true;
         this.showUserView = false;
       }
-    }/*,
+    }
+    /*,
     isNotFound(newValue) {
       if (newValue) {
         this.showHomeView = false;

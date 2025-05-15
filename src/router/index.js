@@ -63,9 +63,6 @@ router.beforeEach((to, from, next) => {
   if(to.name !== 'notfound' && from.name == 'notfound'){
     store.commit('found')
   }
-  console.log(11111)
-  console.log('isLogin:'+store.getters.getLoginState)
-  console.log('isNotFound:'+store.getters.getNotFoundState)
   next();
 });
 

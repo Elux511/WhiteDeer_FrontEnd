@@ -20,13 +20,17 @@
                         </el-form-item>
                         <el-form-item>
                             <el-row :gutter="15">
-                                <el-col :span="14">
+                                <el-col :span="13">
                                     <el-input v-model="form.verificationCode" placeholder="请输入验证码" prefix-icon="el-icon-lock-outline"></el-input>
                                 </el-col>
-                                <el-col :span="9">
+                                <el-col :span="11" style="display: flex;">
                                     <el-button @click="getVerificationCode" :loading="countdown > 0">
                                         {{ countdown > 0? countdown : '获取验证码' }}
                                     </el-button>
+                                    <div class="tooltip">
+                                        <span style="margin-left: 10px;" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">?</span>
+                                        <span v-if="showTooltip" class="tooltiptext">次数限制：每小时5次，每天10次</span>
+                                    </div>
                                 </el-col>
                             </el-row>
                     </el-form-item>
@@ -62,7 +66,8 @@ export default {
         codeReg:/^[a-zA-Z0-9_!?,.@#$%^&*+-=()[\]{}~:;'"`<>|/\\]{4,12}$/,
         phoneReg:/^1[3-9]\d{9}$/,
         vercodeReg:/^\d{6}$/,
-        nameReg:/^([\u4e00-\u9fa5]|\w){2,8}$/
+        nameReg:/^([\u4e00-\u9fa5]|\w){2,8}$/,
+        showTooltip:false
         };
     },
     mounted() {
@@ -77,82 +82,101 @@ export default {
     },
     methods: {
         async handleSubmit() {
-        if (!this.nameReg.test(this.form.username)) {
-            this.$message.warning('请正确输入用户名！');
-            return;
-        }
-        if (!this.codeReg.test(this.form.usercode)) {
-            this.$message.warning('请正确输入密码！');
-            return;
-        }
-        if(this.form.usercode !== this.form.checkcode){
-            this.$message.warning('两次输入密码不一致！');
-            return;
-        }
-        if (!this.phoneReg.test(this.form.phoneNumber)) {
-            this.$message.warning('请正确填写手机号');
-            return;
-        }
-        if(!this.vercodeReg.test(this.form.verificationCode)) {
-            this.$message.warning('请正确填写验证码');
-            return;
-        }
+            if (!this.nameReg.test(this.form.username)) {
+                this.$message.warning('请正确输入用户名！');
+                return;
+            }
+            if (!this.codeReg.test(this.form.usercode)) {
+                this.$message.warning('请正确输入密码！');
+                return;
+            }
+            if(this.form.usercode !== this.form.checkcode){
+                this.$message.warning('两次输入密码不一致！');
+                return;
+            }
+            if (!this.phoneReg.test(this.form.phoneNumber)) {
+                this.$message.warning('请正确填写手机号');
+                return;
+            }
+            if(!this.vercodeReg.test(this.form.verificationCode)) {
+                this.$message.warning('请正确填写验证码');
+                return;
+            }
 
-        this.isLoading = true;
-        try{
-            const res = await axios.post('/api/checkvericode',{
-                "phone":this.form.phoneNumber,
-                "vericode":this.form.verificationCode
-            });
-            if(res.data.state != 1){
-                this.$message.warning('验证码错误！');
-                return;
+            this.isLoading = true;
+            try{
+                const res = await axios.post('/api/checkvericode',{
+                    "phoneNumber":this.form.phoneNumber,
+                    "vericode":this.form.verificationCode
+                });
+                if(res.data.state == 1){
+                    try{
+                        const response = await axios.post('/api/register',{
+                            "name":this.form.username,
+                            "password":this.form.usercode,
+                            "phoneNumber":this.form.phoneNumber
+                        });
+                        if(response.data.state == 1){
+                            this.$confirm(`您的账号是：${response.data.data.id}`,'注册成功！',{
+                                confirmButtonText: '确定',
+                                cancelButtonText: '取消',
+                                type: 'success'
+                            }).then(() => {
+                                this.saveDataToLocalStorage('loginInfoKey2',{
+                                    id:response.data.data.id
+                                })
+                                this.$router.push('/login');
+                            }).catch(() => {
+                                this.saveDataToLocalStorage('loginInfoKey2',{
+                                    id:response.data.data.id
+                                })
+                                this.$router.push('/login');
+                            })
+                        }
+                        else if(response.data.state == 2){
+                            this.$message.error('手机号已被注册！');
+                            return;
+                        }
+                        else if(response.data.state == 3){
+                            this.$message.error('手注册失败，请稍后重试');
+                            return;
+                        }
+                    }catch{
+                        this.$message.error('请求发送失败，请检查网络或联系管理员');
+                    }
+                }
+                else if(res.data.state == 2){
+                    this.$message.error('验证码错误！');
+                    return;
+                }
+                else if(res.data.state == 3){
+                    this.$message.error('验证码已过期！');
+                    return;
+                }
+            } catch{
+                this.$message.error('请求发送失败，请检查网络或联系管理员');
+            } finally{
+                this.isLoading = false;
             }
-            const response = await axios.post('/api/register',{
-                "name":this.form.username,
-                "password":this.form.usercode,
-                "phoneNumber":this.form.phoneNumber
-            });
-            if(response.data.state == 1){
-                this.$confirm(`您的账号是：${response.data.data.id}`,'注册成功！',{
-                    confirmButtonText: '确定',
-                    cancelButtonText: '取消',
-                    type: 'success'
-                }).then(() => {
-                    this.saveDataToLocalStorage('loginInfoKey2',{
-                        id:response.data.data.id
-                    })
-                    this.$router.push('/login');
-                }).catch(() => {
-                    this.saveDataToLocalStorage('loginInfoKey2',{
-                        id:response.data.data.id
-                    })
-                    this.$router.push('/login');
-                })
-            }
-            if(response.data.state == 2){
-                this.$message.warning('手机号已被注册！');
-                return;
-            }
-        }catch{
-            this.$message.error('注册失败!');
-        }
-        this.isLoading = false;
         },
         async getVerificationCode() {
-        if (!this.phoneReg.test(this.form.phoneNumber)) {
-            this.$message.warning('请正确填写手机号');
-            return;
-        }
-        this.countdown = 60;
-        this.startCountdown();
-        try{
-            const response = await axios.post(`/api/vericode?phoneNumber=${this.form.phoneNumber}`);
-            if(response.data.state == 1){
-                this.$message.success('已发送验证码，请注意查收');
+            if (!this.phoneReg.test(this.form.phoneNumber)) {
+                this.$message.warning('请正确填写手机号');
+                return;
             }
-        }catch{this.$message.warning('请求失败，请稍后重试')}
-        
+            this.countdown = 60;
+            this.startCountdown();
+            try{
+                const response = await axios.post(`/api/vericode?phoneNumber=${this.form.phoneNumber}`);
+                if(response.data.state == 1){
+                    this.$message.success('已发送验证码，请注意查收');
+                }
+                else if(response.data.state == 2){
+                    this.$message.error('验证码发送失败，请稍后重试');
+                }
+            } catch{
+                this.$message.error('请求发送失败，请检查网络或联系管理员');
+            }
         },
         startCountdown() {
         if (this.timer) {
@@ -252,5 +276,40 @@ export default {
     justify-content: center;
 }
 
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
 
+.tooltiptext {
+  width: 120px;
+  background-color: black;
+  color: white;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px;
+  position: absolute;
+  z-index: 100;
+  bottom: 100%;
+  left: -350%;
+  margin-left: -60px;
+  opacity: .7;
+  transition: opacity 0.3s;
+}
+
+.tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+.tooltip:hover.tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
 </style>
