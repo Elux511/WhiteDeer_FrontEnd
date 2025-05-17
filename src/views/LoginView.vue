@@ -124,7 +124,7 @@ export default {
             });
             if(response.data.state == 1){
               this.$message.success('登录成功!');
-              sessionStorage.setItem("isLogin",JSON.stringify(true));
+              //Storage.setItem("isLogin",JSON.stringify(true));
               this.$store.commit('Login');
               this.$router.push('/user');
               this.$store.commit('setid',response.data.data.id);
@@ -169,7 +169,7 @@ export default {
         });
         if(response.data.state == 1){
           this.$message.success('登录成功!');
-          sessionStorage.setItem("isLogin",JSON.stringify(true));
+          //sessionStorage.setItem("isLogin",JSON.stringify(true));
           this.$store.commit('Login');
           this.$router.push('/user');
           this.$store.commit('setid',this.form2.zhanghao);

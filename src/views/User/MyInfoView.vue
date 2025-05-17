@@ -100,7 +100,7 @@
     </div>
     <div class="photo-container">
       <div class="photo-display">
-        <img :src="userInfo.face" alt="用户照片" v-if="userInfo.face" />
+        <img :src="userInfo.face" alt="用户照片" v-if="userInfo.face" style="width: 100%; height: 100%;"/>
         <div class="placeholder" v-else>照片显示</div>
       </div>
     </div>
@@ -442,6 +442,7 @@ export default {
             });
             if(response.data.state == 1){
               this.$message.success('上传成功！');
+              this.fetchUserInfo();
               this.closeChangePhotoDialog();
             }
             else if(response.data.state == 2){
@@ -474,11 +475,11 @@ export default {
               const response = await axios.delete(`/api/deleteuser?id=${this.userInfo.id}`);
               if(response.data.state == 1){
                 this.$message.success('删除账号成功，自动返回首页');
-                sessionStorage.setItem("isLogin",JSON.stringify(false));
+                //sessionStorage.setItem("isLogin",JSON.stringify(false));
                 this.$store.commit('Signout');
                 this.$router.push('/login');
                 //插眼
-                sessionStorage.setItem("isLogin",false);
+                //sessionStorage.setItem("isLogin",false);
               }
               else if(response.data.state == 2){
                 this.$message.info('删除账号失败,请稍后重试');
@@ -529,8 +530,8 @@ export default {
 }
 
 .photo-display {
-  width: 300px;
-  height: 200px;
+  width: 360px;
+  height: 270px;
   background-color: #eee;
   display: flex;
   justify-content: center;
@@ -607,7 +608,7 @@ export default {
 
 
 .center{
-  padding-top: 80px;
+  padding-top: 50px;
   display: flex;
   justify-content: center;
 }

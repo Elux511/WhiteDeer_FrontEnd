@@ -243,7 +243,7 @@
           type: 'warning'
         }).then(() => {
           this.$message.success('注销成功!');
-          sessionStorage.setItem("isLogin",JSON.stringify(false));
+          //Storage.setItem("isLogin",JSON.stringify(false));
           this.$store.commit('Signout');
           this.$router.push('/login')
         }).catch(() => {

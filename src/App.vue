@@ -20,11 +20,13 @@ export default {
     NotFoundView
   },
     mounted(){
-      if(JSON.parse(sessionStorage.getItem('isLogin'))){
-        this.$store.commit('Login')
+      if(this.$store.getters.getLoginState){
+        this.showHomeView = false;
+        this.showUserView = true;
       }
       else{
-        this.$store.commit('Signout')
+        this.showHomeView = true;
+        this.showUserView = false;
       }
     },
     

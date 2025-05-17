@@ -68,29 +68,7 @@ export default {
       groupName: '',
       startDate: '',
       endDate: '',
-      groups: [
-        {
-          groupId:"139834",
-          groupName:'测试数据1',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2025-5-11 09:15:00'
-        },
-        {
-          groupId:137583,
-          groupName:'测试数据2',
-          isFull:"是",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          groupId:124865,
-          groupName:'测试数据3',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        }
-      ],
+      groups: [],
       isLoading: false,
       totalCount: 0,
       pageSize: 6,
