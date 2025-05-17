@@ -1,6 +1,5 @@
 <template>
   <div class="quick-login-container">
-    <el-main>
       <div class="login-wrapper">
         <div class="login-form">
           <h3 class="center">登录账号</h3>
@@ -8,12 +7,13 @@
             <el-tab-pane label="快捷登录" name="quick-login">
               <el-form :model="form1" @submit.native.prevent="handleSubmit1">
                 <el-form-item>
-                  <br><el-input v-model="form1.phoneNumber" placeholder="请输入手机号" prefix-icon="el-icon-phone-outline"></el-input>
+                  <br v-if="!isMobile">
+                  <el-input v-model="form1.phoneNumber" placeholder="请输入手机号" prefix-icon="el-icon-phone-outline"></el-input>
                 </el-form-item>
                   <el-form-item>
                 <el-row :gutter="15">
                   <el-col :span="13">
-                    <el-input v-model="form1.verificationCode" placeholder="请输入验证码" prefix-icon="el-icon-lock-outline"></el-input>
+                    <el-input v-model="form1.verificationCode" placeholder="请输入验证码" prefix-icon="el-icon-lock"></el-input>
                   </el-col>
                   <el-col :span="10" style="display: flex;">
                     <el-button @click="getVerificationCode" :loading="countdown > 0">
@@ -27,20 +27,22 @@
                 </el-row>
               </el-form-item>
                 <el-form-item>
-                  <br><el-button type="primary" :loading="isLoading" @click="handleSubmit1" style="width: 100px;display: flex;justify-content: center">登录</el-button>
+                  <br v-if="!isMobile"><el-button type="primary" :loading="isLoading" @click="handleSubmit1" style="width: 100px;display: flex;justify-content: center">登录</el-button>
                 </el-form-item>
               </el-form>
             </el-tab-pane>
             <el-tab-pane label="密码登录" name="password-login">
               <el-form :model="form2" @submit.native.prevent="handleSubmit2">
                 <el-form-item>
-                  <br><el-input v-model="form2.zhanghao" placeholder="请输入8位账号" prefix-icon="el-icon-user"></el-input>
+                  <br v-if="!isMobile">
+                  <el-input v-model="form2.zhanghao" placeholder="请输入8位账号" prefix-icon="el-icon-user"></el-input>
                 </el-form-item>
                 <el-form-item>
                   <el-input v-model="form2.code" placeholder="请输入4-12位密码" prefix-icon="el-icon-lock" show-password></el-input>
                 </el-form-item>
                 <el-form-item>
-                  <br><el-button type="primary" :loading="isLoading" @click="handleSubmit2" style="width: 100px;display: flex;justify-content: center">登录</el-button>
+                  <br v-if="!isMobile">
+                  <el-button type="primary" :loading="isLoading" @click="handleSubmit2" style="width: 100px;display: flex;justify-content: center">登录</el-button>
                 </el-form-item>
               </el-form>
             </el-tab-pane>
@@ -52,7 +54,6 @@
           <p class="register-link">没有账号? <router-link to="/register">去注册</router-link></p>
         </div>
       </div>
-    </el-main>
   </div>
 </template>
 
@@ -77,10 +78,17 @@ export default {
       vercodeReg:/^\d{6}$/,
       zhanghaoReg:/^\d{8}$/,
       codeReg:/^[a-zA-Z0-9_!?,.@#$%^&*+-=()[\]{}~:;'"`<>|/\\]{4,12}$/,
-      showTooltip:false
+      showTooltip:false,
+      isMobile:false
     };
   },
   mounted() {
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    this.isMobile = mediaQuery.matches;
+    mediaQuery.addEventListener('change', (e) => {
+      this.isMobile = e.matches;
+    });
+
     window.addEventListener('resize', this.handleResize);
     this.handleResize();
     const jsonData1 = localStorage.getItem('loginInfoKey1');
@@ -118,6 +126,7 @@ export default {
           "vericode":this.form1.verificationCode
         });
         if(res.data.state == 1){
+          this.$message.success('已发送验证码，请注意查收');
           try{
             const response = await axios.post('/api/login1',{
               "phoneNumber":this.form1.phoneNumber
@@ -144,7 +153,7 @@ export default {
           this.$message.warning('验证码错误！');
         }
         else if(res.data.state == 3){
-          this.$message.warning('验证码已过期！');
+          this.$message.warning('手机号不存在或验证码已过期！');
         }
       } catch{
         this.$message.error('请求发送失败，请检查网络或联系管理员');
@@ -233,9 +242,9 @@ export default {
       }
     },
     saveDataToLocalStorage(key, data) {
-    const jsonData = JSON.stringify(data);
-    localStorage.setItem(key, jsonData);
-}
+      const jsonData = JSON.stringify(data);
+      localStorage.setItem(key, jsonData);
+    }
   }
 };
 </script>
@@ -254,7 +263,7 @@ export default {
   background-color: #fff;
   padding: 20px;
   border-radius: 5px;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
 }
 
 .login-tabs {
@@ -372,4 +381,57 @@ img{
   visibility: visible;
   opacity: 1;
 }
+
+
+/*手机端CSS*/
+
+
+@media (max-width: 768px) {
+  .quick-login-container{
+    background-color: rgb(194, 238, 252);
+    width: 100%;
+    height: auto;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+  }
+
+  .login-form {
+    background-color: rgb(194, 238, 252);
+    width: 300px;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px white;
+  }
+
+  .tooltiptext {
+    font-size: 8px;
+    width: 120px;
+    height: 35px;
+    background-color: black;
+    color: white;
+    text-align: left;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 100;
+    padding: 5px;
+    margin-right: 10px;
+    opacity: .7;
+    transition: opacity 0.3s;
+  }
+
+
+  .MobileButton {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  line-height: 40px;
+  margin-top: 30px ;
+}
+
+}
+
+
+
+
 </style>

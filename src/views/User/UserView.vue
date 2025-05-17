@@ -162,6 +162,11 @@
     }
   },
   mounted() {
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    this.isMobile = mediaQuery.matches;
+    mediaQuery.addEventListener('change', (e) => {
+      this.isMobile = e.matches;
+    });
     this.checkFace();
     this.syncServerTime();
     this.enumerateCameras();

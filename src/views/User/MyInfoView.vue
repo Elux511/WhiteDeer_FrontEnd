@@ -1,111 +1,116 @@
 <template>
-  <div class="user-info-container">
-    <div class="user-info-item">
-      <span class="label">账号:</span>
-      <span class="value">{{ userInfo.id }}</span>
-      <el-button type="text" @click="changePasswordDialogVisible = true" class="button-margin">修改密码</el-button>
-      <el-dialog title="修改密码" :visible.sync="changePasswordDialogVisible" width="30%" center>
-        <el-form>
-          <el-form-item label="请输入原密码:">
-            <el-input v-model="originPassword" prefix-icon="el-icon-lock" show-password></el-input>
-          </el-form-item>
-          <el-form-item label="请输入4-12位新密码:">
-            <el-input v-model="updatePassword" prefix-icon="el-icon-lock" show-password></el-input>
-          </el-form-item>
-          <el-form-item label="请再次输入新密码:">
-            <el-input v-model="updatePasswordAgain" prefix-icon="el-icon-lock" show-password></el-input>
-          </el-form-item>
-        </el-form>
-        <span slot="footer" class="dialog-footer">
-          <el-button type="primary" @click="handleChangePassword">确 定</el-button>
-          <el-button @click="cancleChangePassword">取 消</el-button>
-        </span>
-      </el-dialog>
+  <div>
+    <div class="loading-overlay" v-if="isLoading">
+      <div class="loading-spinner"></div>
     </div>
-    <hr class="divider" />
-    <div class="user-info-item">
-      <span class="label">用户名:</span>
-      <span class="value">{{ userInfo.name }}</span>
-      <el-button type="text" @click="changeNameDialogVisible = true" class="button-margin">更换用户名</el-button>
-      <el-dialog title="修改用户名" :visible.sync="changeNameDialogVisible" width="30%" center>
-        <el-form>
-          <el-form-item label="请输入新用户名：">
-            <el-input v-model="updateName"></el-input>
-          </el-form-item>
-        </el-form>
-        <span slot="footer" class="dialog-footer">
-          <el-button type="primary" :loading="isLoading" @click="handleChangeName">确 定</el-button>
-          <el-button @click="cancleChangeName">取 消</el-button>
-        </span>
-      </el-dialog>
-    </div>
-    <hr class="divider" />
-    <div class="user-info-item">
-      <span class="label">手机号:</span>
-      <span class="value">{{ userInfo.phoneNumber }}</span>
-      <el-button type="text" @click="changePhoneDialogVisible = true" class="button-margin">更换手机号</el-button>
-      <el-dialog title="修改手机号" :visible.sync="changePhoneDialogVisible" width="30%" center>
-        <el-input placeholder="请输入新手机号" v-model="updatePhone"></el-input>
-        <div class="verification">
-          <el-input placeholder="请输入验证码" v-model="verificationCode"></el-input>
-          <el-button @click="getVerificationCode" :loading="countdown > 0">
-            {{ countdown > 0? countdown : '获取验证码' }}
-          </el-button>
-          <div class="tooltip">
-            <span style="display: inline-flex; align-items: center; vertical-align: middle; margin-left: 10px;" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">?</span>
-            <span v-if="showTooltip" class="tooltiptext">次数限制：每小时5次，每天10次</span>
-          </div>
-        </div>
-        <span slot="footer" class="dialog-footer">
-          <el-button class="Dialog-button" :loading="isLoading" type="primary" @click="handleChangePhone">确 定</el-button>
-          <el-button class="Dialog-button" @click="cancleChangePhone">取 消</el-button>
-        </span>
-      </el-dialog>
-    </div>
-    <hr class="divider" />
-    <div class="user-info-item">
-      <span class="label">照片</span>
-      <span class="value">&nbsp;</span>
-      <el-button type="text" @click="changePhotoDialogVisible = true" class="button-margin">
-        <span v-if="this.$store.getters.getFaceStatus">更换照片</span>
-        <span v-else>上传照片</span>
-      </el-button>
-      <el-dialog title="修改照片" :visible.sync="changePhotoDialogVisible" width="55%" style="margin-top:-5%" center>
-        <div v-if="photoParameter.cameraDevices.length > 1">
-          选择调用的摄像头设备：<el-select v-model="selectedCameraDeviceId" placeholder="选择摄像头">
-            <el-option
-              v-for="device in photoParameter.cameraDevices"
-              :key="device.deviceId"
-              :label="device.label"
-              :value="device.deviceId"
-            ></el-option>
-          </el-select>
-        </div>
-          <div class="video-container">
-            <video ref="video" autoplay playsinline></video>
-            <img  v-if="photoParameter.showingPicture" :src="photoParameter.imageUrl" alt="Displayed Image" />
-          </div>
-          <div class="button-container">
-            <button @click="startCamera">启动摄像头</button>
-            <button @click="stopCamera">关闭摄像头</button>
-            <button v-if="!photoParameter.showingPicture" @click="captureImage">拍照</button>
-            <button v-if="photoParameter.isCaptured" :loading="isLoading" @click="submitImage">提交</button>
-            <button v-if="photoParameter.showingPicture" @click="startAgain">重拍</button>
-            <progress :value="photoParameter.uploadProgress" max="100" v-if="photoParameter.uploadProgress > 0"></progress>
-          </div>
-        <span slot="footer" class="dialog-footer">
-          <el-button type="primary" @click="closeChangePhotoDialog">关 闭</el-button>
-        </span>
-      </el-dialog>
-    </div>
-    <div class="photo-container">
-      <div class="photo-display">
-        <img :src="userInfo.face" alt="用户照片" v-if="userInfo.face" style="width: 100%; height: 100%;"/>
-        <div class="placeholder" v-else>照片显示</div>
+    <div class="user-info-container">
+      <div class="user-info-item">
+        <span class="label">账号:</span>
+        <span class="value">{{ userInfo.id }}</span>
+        <el-button type="text" @click="changePasswordDialogVisible = true" class="button-margin">修改密码</el-button>
+        <el-dialog title="修改密码" :visible.sync="changePasswordDialogVisible" width="30%" center>
+          <el-form>
+            <el-form-item label="请输入原密码:">
+              <el-input v-model="originPassword" prefix-icon="el-icon-lock" show-password></el-input>
+            </el-form-item>
+            <el-form-item label="请输入4-12位新密码:">
+              <el-input v-model="updatePassword" prefix-icon="el-icon-lock" show-password></el-input>
+            </el-form-item>
+            <el-form-item label="请再次输入新密码:">
+              <el-input v-model="updatePasswordAgain" prefix-icon="el-icon-lock" show-password></el-input>
+            </el-form-item>
+          </el-form>
+          <span slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="handleChangePassword">确 定</el-button>
+            <el-button @click="cancleChangePassword">取 消</el-button>
+          </span>
+        </el-dialog>
       </div>
-    </div>
-    <div class="center">
-      <el-button type="primary" @click="deleteUser">删除账号</el-button>
+      <hr class="divider" />
+      <div class="user-info-item">
+        <span class="label">用户名:</span>
+        <span class="value">{{ userInfo.name }}</span>
+        <el-button type="text" @click="changeNameDialogVisible = true" class="button-margin">更换用户名</el-button>
+        <el-dialog title="修改用户名" :visible.sync="changeNameDialogVisible" width="30%" center>
+          <el-form>
+            <el-form-item label="请输入新用户名：">
+              <el-input v-model="updateName"></el-input>
+            </el-form-item>
+          </el-form>
+          <span slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="handleChangeName">确 定</el-button>
+            <el-button @click="cancleChangeName">取 消</el-button>
+          </span>
+        </el-dialog>
+      </div>
+      <hr class="divider" />
+      <div class="user-info-item">
+        <span class="label">手机号:</span>
+        <span class="value">{{ userInfo.phoneNumber }}</span>
+        <el-button type="text" @click="changePhoneDialogVisible = true" class="button-margin">更换手机号</el-button>
+        <el-dialog title="修改手机号" :visible.sync="changePhoneDialogVisible" width="30%" center>
+          <el-input placeholder="请输入新手机号" v-model="updatePhone"></el-input>
+          <div class="verification">
+            <el-input placeholder="请输入验证码" v-model="verificationCode"></el-input>
+            <el-button @click="getVerificationCode" :loading="countdown > 0">
+              {{ countdown > 0? countdown : '获取验证码' }}
+            </el-button>
+            <div class="tooltip">
+              <span style="display: inline-flex; align-items: center; vertical-align: middle; margin-left: 10px;" @mouseenter="showTooltip = true" @mouseleave="showTooltip = false">?</span>
+              <span v-if="showTooltip" class="tooltiptext">次数限制：每小时5次，每天10次</span>
+            </div>
+          </div>
+          <span slot="footer" class="dialog-footer">
+            <el-button class="Dialog-button" type="primary" @click="handleChangePhone">确 定</el-button>
+            <el-button class="Dialog-button" @click="cancleChangePhone">取 消</el-button>
+          </span>
+        </el-dialog>
+      </div>
+      <hr class="divider" />
+      <div class="user-info-item">
+        <span class="label">照片</span>
+        <span class="value">&nbsp;</span>
+        <el-button type="text" @click="changePhotoDialogVisible = true" class="button-margin">
+          <span v-if="this.$store.getters.getFaceStatus">更换照片</span>
+          <span v-else>上传照片</span>
+        </el-button>
+        <el-dialog title="修改照片" :visible.sync="changePhotoDialogVisible" width="55%" style="margin-top:-5%" center>
+          <div v-if="photoParameter.cameraDevices.length > 1">
+            选择调用的摄像头设备：<el-select v-model="selectedCameraDeviceId" placeholder="选择摄像头">
+              <el-option
+                v-for="device in photoParameter.cameraDevices"
+                :key="device.deviceId"
+                :label="device.label"
+                :value="device.deviceId"
+              ></el-option>
+            </el-select>
+          </div>
+            <div class="video-container">
+              <video ref="video" autoplay playsinline></video>
+              <img  v-if="photoParameter.showingPicture" :src="photoParameter.imageUrl" alt="Displayed Image" />
+            </div>
+            <div class="button-container">
+              <button @click="startCamera">启动摄像头</button>
+              <button @click="stopCamera">关闭摄像头</button>
+              <button v-if="!photoParameter.showingPicture" @click="captureImage">拍照</button>
+              <button v-if="photoParameter.isCaptured" @click="submitImage">提交</button>
+              <button v-if="photoParameter.showingPicture" @click="startAgain">重拍</button>
+              <progress :value="photoParameter.uploadProgress" max="100" v-if="photoParameter.uploadProgress > 0"></progress>
+            </div>
+          <span slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="closeChangePhotoDialog">关 闭</el-button>
+          </span>
+        </el-dialog>
+      </div>
+      <div class="photo-container">
+        <div class="photo-display">
+          <img :src="userInfo.face" alt="用户照片" v-if="userInfo.face" style="width: 100%; height: 100%;"/>
+          <div class="placeholder" v-else>照片显示</div>
+        </div>
+      </div>
+      <div class="center">
+        <el-button type="primary" @click="deleteUser">删除账号</el-button>
+      </div>
     </div>
   </div>
 </template>
@@ -122,7 +127,6 @@ export default {
         phoneNumber:'',
         face:null
       },
-      isLoading: true,
       changePasswordDialogVisible:false,
       changeNameDialogVisible:false,
       changePhoneDialogVisible:false,
@@ -150,15 +154,22 @@ export default {
       countdown: 0,
       timer:null,
       selectedCameraDeviceId: '', //存储用户选择的摄像头设备ID
-      showTooltip:false
+      showTooltip:false,
+      isLoading:true
     };
   },
   mounted() {
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    this.isMobile = mediaQuery.matches;
+    mediaQuery.addEventListener('change', (e) => {
+      this.isMobile = e.matches;
+    });
     this.fetchUserInfo();
     this.enumerateCameras();
   },
   methods: {
     async fetchUserInfo() {
+      this.isLoading = true;
       try {
         this.userInfo.id = this.$store.getters.getid;
         const response = await axios.get(`/api/myinfo?id=${this.userInfo.id}`);
@@ -170,6 +181,8 @@ export default {
         }
       } catch {
         this.$message.error('请求发送失败，请检查网络或联系管理员');
+      } finally{
+        this.isLoading = false;
       }
     },
     async getVerificationCode() {
@@ -208,7 +221,6 @@ export default {
         this.$message.warning('请勿修改为同一个密码！');
         return;
       }
-      this.isLoading = true;
       try{
         const res = await axios.post('/api/login2',{
           "id":this.userInfo.id,
@@ -230,8 +242,6 @@ export default {
             }
           } catch{
             this.$message.error('请求发送失败，请检查网络或联系管理员');
-          } finally{
-            this.isLoading = false;
           }
         }
         if(res.data.state == 3){
@@ -239,8 +249,6 @@ export default {
         }
       } catch{
         this.$message.error('请求发送失败，请检查网络或联系管理员');
-      } finally{
-        this.isLoading = false;
       }
     },
     async handleChangeName(){
@@ -252,7 +260,6 @@ export default {
         this.$message.warning('请勿修改重复名字！');
         return;
       }
-      this.isLoading = true;
       const id = this.$store.getters.getid;
       await axios.patch('/api/changename',{
         "id":id,
@@ -269,7 +276,6 @@ export default {
       }).catch(() => {
         this.$message.error('修改失败，请稍后重试');
       });
-      this.isLoading = false;
     },
     async handleChangePhone() {
       if (!this.phoneReg.test(this.updatePhone)) {
@@ -284,7 +290,6 @@ export default {
         this.$message.warning('请正确填写验证码');
         return;
       }
-      this.isLoading = true;
       try{
         const res = await axios.post('/api/checkvericode',{
           "phoneNumber":this.updatePhone,
@@ -308,14 +313,15 @@ export default {
             this.$message.error('请求发送失败，请检查网络或联系管理员');
           }
         }
-        if(res.data.state == 2){
+        else if(res.data.state == 2){
           this.$message.error('验证码错误！');
+        }
+        else if(res.data.state == 3){
+          this.$message.error('手机号不存在或验证码已过期！');
         }
       } catch{
         this.$message.error('请求发送失败，请检查网络或联系管理员');
-      } finally{
-        this.isLoading = false;
-      }
+      } 
     },
     cancleChangePassword(){
       this.originPassword = '';
@@ -431,7 +437,6 @@ export default {
           const formData = new FormData();
           formData.append("id",this.$store.getters.getid);
           formData.append("face", this.photoParameter.ImageFile);
-          this.isLoading = true;
           try {
             const response = await axios.patch("/api/setface", formData, {
               onUploadProgress: (progressEvent) => {
@@ -451,9 +456,7 @@ export default {
           } catch {
             this.$message.error('请求发送失败，请检查网络或联系管理员');
             //插眼
-          } finally{
-            this.isLoading = false;
-          }
+          } 
         },
 
         resetPhotoParameter(){

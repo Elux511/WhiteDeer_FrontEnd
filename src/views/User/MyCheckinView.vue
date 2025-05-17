@@ -1,88 +1,89 @@
 <template>
-  <div class="task-container">
-    <div class="filter-search">
-      <el-radio-group v-model="filterStatus">
-        <el-radio label="all">全部</el-radio>
-        <el-radio label="incomplete">未完成</el-radio>
-        <el-radio label="completed">已完成</el-radio>
-      </el-radio-group>
-      <el-input placeholder="输入标题搜索打卡任务" v-model="searchKeyword" suffix-icon="el-icon-search"></el-input>
+  <div>
+    <div class="loading-overlay" v-if="isLoading">
+      <div class="loading-spinner"></div>
     </div>
-    <el-row :gutter="20">
-      <h2 v-if="tasks.length == 0" style="text-align: center;">暂无数据</h2>
-      <el-col :span="8" v-for="(task, index) in filteredTasks" :key="index">
-        <el-card class="task-card">
-            <div class="task-title">{{ task.name }}</div>
-            <div class="task-time">
-              <span>开始时间: {{ task.beginTime }}</span><br>
-              <span>结束时间: {{ task.endTime }}</span><br>
-              <span>所属团队: {{ task.groupName }}</span>
-            </div>
-            <div class="task-statistics">
-              <span>应打卡数 {{ task.shouldCount }}</span>
-              <span v-if="task.status === 'completed'">实打卡数 {{ task.actualCount }}</span>
-              <span v-else>待打卡数 {{ task.shouldCount }}</span>
-            </div>
-            <div class="task-actions">
-              <el-button type="text" @click="shareQrCode(task)">分享二维码</el-button>
-              <el-button
-                type="primary"
-                @click="checkin(task)"
-                :disabled="task.status === 'completed'"
-                :loading="isLoading"
-              >
-                {{ task.status === 'completed'? '已打卡' : '打卡' }}
-              </el-button>
-            </div>
-            <div class="task-checkin-type">
-              <span>打卡类型:
-                <span v-if="task.checkinType === '人脸识别'">人脸识别</span>
-                <span v-if="task.checkinType === '定位打卡'">定位打卡</span>
-                <span v-if="task.checkinType === '都'">人脸识别，定位打卡</span>
-              </span>
-            </div>
-        </el-card>
-      </el-col>
-    </el-row>
-      <div class="pagination-container">
-        <el-button @click="prevPage" :disabled="currentPage === 1">上一页</el-button>
-        <span>{{ currentPage }}</span> / 
-        <span>{{ totalPages }}</span>
-        <el-button @click="nextPage" :disabled="currentPage === totalPages">下一页</el-button>
+    <div class="task-container">
+      <div class="filter-search">
+        <el-radio-group v-model="filterStatus">
+          <el-radio label="all">全部</el-radio>
+          <el-radio label="incomplete">未完成</el-radio>
+          <el-radio label="completed">已完成</el-radio>
+        </el-radio-group>
+        <el-input placeholder="输入标题搜索打卡任务" v-model="searchKeyword" suffix-icon="el-icon-search"></el-input>
       </div>
-      <el-dialog title="上传照片" :visible.sync="checkinDialogVisible" width="55%" style="margin-top:-5%" center custom-class="custom-checkin-dialog">
-        <div v-if="photoParameter.cameraDevices.length > 1">
-          选择调用的摄像头设备：
-          <el-select v-model="selectedCameraDeviceId" placeholder="选择摄像头">
-            <el-option
-              v-for="device in photoParameter.cameraDevices"
-              :key="device.deviceId"
-              :label="device.label"
-              :value="device.deviceId"
-            ></el-option>
-          </el-select>
+      <el-row :gutter="20">
+        <h2 v-if="tasks.length == 0" style="text-align: center;">暂无数据</h2>
+        <el-col :span="8" v-for="(task, index) in filteredTasks" :key="index">
+          <el-card class="task-card">
+              <div class="task-title">{{ task.name }}</div>
+              <div class="task-time">
+                <span>开始时间: {{ task.beginTime }}</span><br>
+                <span>结束时间: {{ task.endTime }}</span><br>
+                <span>所属团队: {{ task.groupName }}</span>
+              </div>
+              <div class="task-statistics">
+                <span>应打卡数 {{ task.shouldCount }}</span>
+                <span v-if="task.status === 'completed'">实打卡数 {{ task.actualCount }}</span>
+                <span v-else>待打卡数 {{ task.shouldCount }}</span>
+              </div>
+              <div class="task-actions">
+                <el-button type="text" @click="shareQrCode(task)">分享二维码</el-button>
+                <el-button
+                  type="primary"
+                  @click="checkin(task)"
+                  :disabled="task.status === 'completed'"
+                >
+                  {{ task.status === 'completed'? '已打卡' : '打卡' }}
+                </el-button>
+              </div>
+              <div class="task-checkin-type">
+                <span>打卡类型:
+                  <span v-if="task.type === '人脸识别'">人脸识别</span>
+                  <span v-if="task.type === '定位打卡'">定位打卡</span>
+                  <span v-if="task.type === '都'">人脸识别，定位打卡</span>
+                </span>
+              </div>
+          </el-card>
+        </el-col>
+      </el-row>
+        <div class="pagination-container">
+          <el-button @click="prevPage" :disabled="currentPage === 1">上一页</el-button>
+          <span>{{ currentPage }}</span> / 
+          <span>{{ totalPages }}</span>
+          <el-button @click="nextPage" :disabled="currentPage === totalPages">下一页</el-button>
         </div>
-        <div class="video-container">
-          <video ref="video" autoplay playsinline></video>
-          <img  v-if="photoParameter.showingPicture" :src="photoParameter.imageUrl" alt="Displayed Image" />
-        </div>
-        <div class="button-container">
-          <button @click="startCamera">启动摄像头</button>
-          <button @click="stopCamera">关闭摄像头</button>
-          <button v-if="!photoParameter.showingPicture" @click="captureImage">拍照</button>
-          <button v-if="photoParameter.isCaptured" :loading="isLoading" @click="submitImage">提交</button>
-          <button v-if="photoParameter.showingPicture" @click="startAgain">重拍</button>
-          <progress :value="photoParameter.uploadProgress" max="100" v-if="photoParameter.uploadProgress > 0"></progress>
-        </div>
-        <span slot="footer" class="dialog-footer">
-          <el-button type="primary" @click="close">关 闭</el-button>
-        </span>
-      </el-dialog>
+        <el-dialog title="上传照片" :visible.sync="checkinDialogVisible" width="55%" style="margin-top:-5%" center custom-class="custom-checkin-dialog">
+          <div v-if="photoParameter.cameraDevices.length > 1">
+            选择调用的摄像头设备：
+            <el-select v-model="selectedCameraDeviceId" placeholder="选择摄像头">
+              <el-option
+                v-for="device in photoParameter.cameraDevices"
+                :key="device.deviceId"
+                :label="device.label"
+                :value="device.deviceId"
+              ></el-option>
+            </el-select>
+          </div>
+          <div class="video-container">
+            <video ref="video" autoplay playsinline></video>
+            <img  v-if="photoParameter.showingPicture" :src="photoParameter.imageUrl" alt="Displayed Image" />
+          </div>
+          <div class="button-container">
+            <button @click="startCamera">启动摄像头</button>
+            <button @click="stopCamera">关闭摄像头</button>
+            <button v-if="!photoParameter.showingPicture" @click="captureImage">拍照</button>
+            <button v-if="photoParameter.isCaptured" @click="submitImage">提交</button>
+            <button v-if="photoParameter.showingPicture" @click="startAgain">重拍</button>
+            <progress :value="photoParameter.uploadProgress" max="100" v-if="photoParameter.uploadProgress > 0"></progress>
+          </div>
+          <span slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="close">关 闭</el-button>
+          </span>
+        </el-dialog>
     </div>
+  </div>
 
-
-
-    
 </template>
 
 <script>
@@ -91,47 +92,7 @@ import axios from 'axios';
 export default {
   data() {
     return {
-      tasks: [
-        {
-          "id": 1,
-          "name": "测试数据1",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "beginTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "groupName": "团队1",
-          "status": "incomplete",
-          "shouldCount": "10",
-          "actualCount":" 9",
-          "groupId": "2",
-          "checkinType": "人脸识别"
-        },
-        {
-          "id": 2,
-          "name": "测试数据2",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "beginTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "groupName": "团队1",
-          "status": "incomplete",
-          "shouldCount": 10,
-          "actualCount": 9,
-          "groupId": 2,
-          "checkinType":"定位打卡"
-        },
-        {
-          "id": 3,
-          "name": "测试数据3",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "beginTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "groupName": "团队1",
-          "status": "incomplete",
-          "shouldCount": 10,
-          "actualCount": 0,
-          "groupId": 2,
-          "checkinType": "都"
-        }
-      ],
+      tasks: [],
       timer:null,
       filterStatus: 'all', //选择的状态
       searchKeyword: '', //搜索栏输入
@@ -145,7 +106,6 @@ export default {
         isCameraWorking:false,
         cameraDevices: []
       },
-      isLoading:false,
       checkinDialogVisible:false,
       currentTaskId:'', //当前执行打卡的任务id
       currentTaskType:'',//这两个主要是在dialog里不好传参
@@ -155,7 +115,8 @@ export default {
       userLatitude: null, // 用户的纬度
       userLongitude: null, // 用户的经度
       locationError: null, // 存储位置获取的错误信息
-      locationSuccess:true
+      locationSuccess:true,
+      isLoading:true
     };
   },
   computed: {
@@ -193,6 +154,11 @@ export default {
     }
   },
   mounted() {
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    this.isMobile = mediaQuery.matches;
+    mediaQuery.addEventListener('change', (e) => {
+      this.isMobile = e.matches;
+    });
     this.fetchTasks();
     this.enumerateCameras();
   },
@@ -201,17 +167,24 @@ export default {
   },
   methods: {
     async fetchTasks() {
+      this.isLoading = true;
       try {
         const id = this.$store.getters.getid;
         const response = await axios.get(`/api/mycheckin?id=${id}`);
         if(response.data.state == 1){
-          this.tasks = response.data.data.checkinList;
+          this.tasks = response.data.data.checkinList.map(task => ({
+            ...task,
+            beginTime:task.beginTime.replace("T"," "),
+            endTime:task.endTime.replace("T"," ")
+          })) || [];
         }
         else if(response.data.state == 2){
           this.$message.error('获取打卡任务失败，请稍后重试');
         }
-      } catch {
+      } catch{
         this.$message.error('请求发送失败，请检查网络或联系管理员');
+      } finally{
+        this.isLoading = false;
       }
     },
     shareQrCode(task) {
@@ -219,27 +192,26 @@ export default {
     },
     checkin(task) {
       this.currentTaskId = task.id;
-      this.currentTaskType = task.checkinType;
-      if(task.checkinType === '人脸识别' || task.checkinType === '都'){
+      this.currentTaskType = task.type;
+      if(task.type === '人脸识别' || task.type === '都'){
         this.checkinDialogVisible = true;
       }
-      if (task.checkinType === '定位打卡' || task.checkinType === '都') {
+      if (task.type === '定位打卡' || task.type === '都') {
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             async (position) => {
               this.userLatitude = position.coords.latitude;
               this.userLongitude = position.coords.longitude;
-              if(task.checkinType === '定位打卡'){
+              if(task.type === '定位打卡'){
                 const id = this.$store.getters.getid;
-                this.isLoading = true;
+                const formData = new FormData();
+                formData.append("taskId",task.id);
+                formData.append("type","定位打卡");
+                formData.append("face", this.photoParameter.ImageFile);
+                formData.append("latitude",this.userLatitude);
+                formData.append("longitude",this.userLongitude);
                 try{
-                  const response = await axios.post(`/api/checkin?id=${id}`,{
-                  "id":task.id,
-                  "type":"定位打卡",
-                  "face":this.photoParameter.ImageFile,
-                  "latitude":this.userLatitude,
-                  "longitude":this.userLongitude
-                });
+                  const response = await axios.post(`/api/checkin?id=${id}`,formData);
                 if(response.data.state == 1){
                   this.$message.success('打卡成功!');
                   this.fetchTasks();
@@ -250,12 +222,14 @@ export default {
                 else if(response.data.state == 4){
                   this.$message.error('打卡失败，请稍后重试');
                 }
+                else if(response.data.state == 5){
+                  this.$message.error('打卡失败，不在打卡时间内！');
+                }
                 } catch{
                   this.$message.error('请求发送失败，请检查网络或联系管理员');
                 } finally{
                   this.userLatitude = '';
                   this.userLongitude = '';
-                  this.isLoading = false;
                 }
               }
             },
@@ -355,12 +329,11 @@ export default {
     },
     async submitImage() {
       const formData = new FormData();
-            formData.append("id",this.currentTaskId);
+            formData.append("taskId",this.currentTaskId);
             formData.append("type",this.currentTaskType);
             formData.append("face", this.photoParameter.ImageFile);
             formData.append("latitude",this.userLatitude);
             formData.append("longitude",this.userLongitude);
-            this.isLoading = true;
             try {
                 const response = await axios.post(`/api/checkin?id=${this.$store.getters.getid}`, formData, {
                 onUploadProgress: (progressEvent) => {
@@ -371,7 +344,7 @@ export default {
                 });
                 if(response.data.state == 1){
                   this.$message.success('打卡成功!');
-                  this.filteredTasks();
+                  this.fetchTasks();
                   this.close();
                 }
                 else if(response.data.state == 2){
@@ -383,10 +356,11 @@ export default {
                 else if(response.data.state == 4){
                   this.$message.error('打卡失败，请稍后重试');
                 }
+                else if(response.data.state == 5){
+                  this.$message.error('打卡失败，不在打卡时间内！');
+                }
             } catch {
               this.$message.error('请求发送失败，请检查网络或联系管理员');
-            } finally{
-              this.isLoading = false;
             }
     },
         resetPhotoParameter(){

@@ -1,213 +1,220 @@
+
 <template>
-  <div class="team-container">
-    <h3 class="small">我加入的团队</h3>
-    <el-table :data="paginatedJoinedTeams" border>
-      <el-table-column prop="groupId" label="团队编号" align="center" width="80"></el-table-column>
-      <el-table-column prop="groupName" label="团队名称" align="center"></el-table-column>
-      <el-table-column prop="memberCount" label="人数" width="130" align="center"></el-table-column>
-      <el-table-column prop="createTime" label="创建时间" width="180" align="center"></el-table-column>
-      <el-table-column label="操作" align="center">
-        <template slot-scope="scope">
-          <el-button type="text" @click="handleExit(scope.row)">退出团队</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="pagination">
-      <el-button size="mini" @click="joinedPage > 1 ? joinedPage-- : null">上一页</el-button>
-      <span>{{ joinedPage }}/{{ joinedTotalPages }}</span>
-      <el-button size="mini" @click="joinedPage < joinedTotalPages ? joinedPage++ : null">下一页</el-button>
+  <div>
+    <div class="loading-overlay" v-if="isLoading">
+      <div class="loading-spinner"></div>
     </div>
-
-    <h3 class="small">我管理的团队</h3>
-    <el-table :data="paginatedManagedTeams" border>
-      <el-table-column prop="groupId" label="团队编号" align="center" width="80"></el-table-column>
-      <el-table-column prop="groupName" label="团队名称" align="center"></el-table-column>
-      <el-table-column prop="memberCount" label="人数" width="70" align="center"></el-table-column>
-      <el-table-column prop="createTime" label="创建时间" width="180" align="center"></el-table-column>
-      <el-table-column label="操作" align="center" width="310">
-        <template slot-scope="scope">
-          <div style="display: flex;">
-            <el-button type="text" @click="getGroupInfo(scope.row.groupId)">查看团队信息</el-button>
-            <el-button type="text" @click="postTask(scope.row)">发布打卡任务</el-button>
-            <el-button type="text" @click="deleteGroup(scope.row)">解散团队</el-button>
-          </div>
-        </template>
-      </el-table-column>
-    </el-table>
-    <div class="pagination">
-      <el-button size="mini" @click="managedPage > 1 ? managedPage-- : null">上一页</el-button>
-      <span>{{ managedPage }}/{{ managedTotalPages }}</span>
-      <el-button size="mini" @click="managedPage < managedTotalPages ? managedPage++ : null">下一页</el-button>
-    </div>
-    
-    <el-dialog title="团队详情" :visible.sync="groupInfoDialogVisible" width="85%" center>
-      <div style="display: flex; width: 100%; gap:50px;">
-        <div style="text-align: center;"><!-- 原团队成员信息表格，调整宽度 -->
-          <h3 >团队成员信息</h3>
-          <el-table :data="currentPageMembers" style="width: 100%;">
-              <el-table-column prop="name" label="昵称" width="100" align="center"></el-table-column>
-              <el-table-column prop="id" label="账号" width="85" align="center"></el-table-column>
-              <el-table-column prop="phoneNumber" label="手机号" width="120" align="center"></el-table-column>
-              <el-table-column label="操作" width="80" align="center">
-                <template #default="scope">
-                  <el-button type="text" @click="removeMember(scope.row)">移出团队</el-button>
-                </template>
-              </el-table-column>
-          </el-table>
-          <div class="pagination">
-            <el-button @click="prevMemberPage" :disabled="memberCurrentPage === 1">上一页</el-button>
-            <span>{{ memberCurrentPage }}</span> /
-            <span>{{ totalMemberPages }}</span>
-            <el-button @click="nextMemberPage" :disabled="memberCurrentPage === totalMemberPages">下一页</el-button>
-          </div>
-        </div>
-        <div style="text-align: center;"><!-- 新增的打卡任务表格 -->
-            <h3>打卡任务列表</h3>
-            <el-table :data="currentPageTasks" style="width: 100%;" >
-              <el-table-column prop="name" label="任务名称" width="100" align="center"></el-table-column>
-              <el-table-column prop="id" label="编号" width="70" align="center"></el-table-column>
-              <el-table-column label="完成情况" align="center">
-                <template #default="scope">
-                  <span>{{ scope.row.actualCount }}/{{ scope.row.shouldCount }}</span>
-                </template>
-              </el-table-column>
-              <el-table-column prop="endTime" label="截至时间" width="150" align="center"></el-table-column>
-              <el-table-column label="操作" width="160" align="center">
-                  <template #default="scope">
-                    <el-button type="text" @click="getTaskDetail(scope.row)">查看详情</el-button>
-                    <el-button type="text" @click="deleteTask(scope.row)">删除</el-button>
-                  </template>
-              </el-table-column>
-          </el-table>
-          <div class="pagination">
-            <el-button @click="prevTaskPage" :disabled="taskCurrentPage === 1">上一页</el-button>
-            <span>{{ taskCurrentPage }}</span> /
-            <span>{{ totalTaskPages }}</span>
-            <el-button @click="nextTaskPage" :disabled="taskCurrentPage === totalTaskPages">下一页</el-button>
-          </div>
-        </div>
-        <el-dialog width="40%" title="打卡任务详细信息" :visible.sync="taskDetailsDialogVisible" append-to-body center>
-          <div class="task-detail-container">
-            <p class="task-item">
-              <span class="task-label">任务名称：</span>
-              <span class="task-value">{{ taskDetails.name }}</span>
-            </p>
-            <p class="task-item">
-              <span class="task-label">任务描述：</span>
-              <span class="task-value">{{ taskDetails.description }}</span>
-            </p>
-            <p class="task-item">
-              <span class="task-label">开始时间：</span>
-              <span class="task-value">{{ taskDetails.beginTime }}</span>
-            </p>
-            <p class="task-item">
-              <span class="task-label">结束时间：</span>
-              <span class="task-value">{{ taskDetails.endTime }}</span>
-            </p>
-            <p class="task-item">
-              <span class="task-label">已完成打卡成员：</span>
-              <span class="task-value">{{ taskDetails.completedNameList.join(', ') }}</span>
-            </p>
-            <p class="task-item">
-              <span class="task-label">未完成打卡成员：</span>
-              <span class="task-value">{{ taskDetails.incompleteNameList.join(', ') }}</span>
-            </p>
-            <p class="task-item">
-              <span class="task-label">任务类型：</span>
-              <span class="task-value">{{ taskDetails.taskType === '都' ? '人脸识别 + 定位打卡' : taskDetails.taskType }}</span>
-            </p>
-          </div>
-        </el-dialog>
+    <div class="team-container">
+      <h3 class="small">我加入的团队</h3>
+      <el-table :data="paginatedJoinedTeams" border>
+        <el-table-column prop="groupId" label="团队编号" align="center" width="80"></el-table-column>
+        <el-table-column prop="groupName" label="团队名称" align="center"></el-table-column>
+        <el-table-column prop="memberCount" label="人数" width="130" align="center"></el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="180" align="center"></el-table-column>
+        <el-table-column label="操作" align="center">
+          <template slot-scope="scope">
+            <el-button type="text" @click="handleExit(scope.row)">退出团队</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pagination">
+        <el-button size="mini" @click="joinedPage > 1 ? joinedPage-- : null">上一页</el-button>
+        <span>{{ joinedPage }}/{{ joinedTotalPages }}</span>
+        <el-button size="mini" @click="joinedPage < joinedTotalPages ? joinedPage++ : null">下一页</el-button>
       </div>
-      <span slot="footer" class="dialog-footer">
-          <el-button type="primary" @click="closeTeamMember">退 出</el-button>
-      </span>
-    </el-dialog>
-    
-    <el-dialog name="发布打卡任务" :visible.sync="postTaskDialogVisible" width="55%" center style="margin-top:-5%; padding:0%">
-      <el-form ref="taskFormRef" :model="newTask" :rules="rules" label-width="100px" size="small" > 
-        <el-form-item label="任务名称" prop="name">
-          <el-input v-model="newTask.name" placeholder="请输入任务名称" />
-        </el-form-item>
 
-        <el-form-item label="任务描述" prop="description">
-          <el-input type="textarea" v-model="newTask.description" :rows="1" placeholder="请输入任务描述"/>
-        </el-form-item>
-
-        <el-form-item label="打卡类型" prop="checkinType">
-          <el-checkbox-group v-model="newTask.checkinType">
-            <el-checkbox label="人脸识别" />
-            <el-checkbox label="定位打卡" />
-          </el-checkbox-group>
-        </el-form-item>
-
-        <el-form-item label="打卡时段">
-          <el-date-picker
-            v-model="newTask.startTime"
-            type="datetime"
-            placeholder="开始日期时间"
-            :picker-options="{
-              shortcuts: false,
-              format: 'yyyy-MM-dd HH:mm',
-              valueFormat: 'yyyy-MM-dd HH:mm'
-            }"
-          />
-          <span class="mx-2">至</span>
-          <el-date-picker
-            v-model="newTask.endTime"
-            type="datetime"
-            placeholder="结束日期时间"
-            :picker-options="{
-              shortcuts: false,
-              format: 'yyyy-MM-dd HH:mm',
-              valueFormat: 'yyyy-MM-dd HH:mm'
-            }"
-          />
-        </el-form-item>
-        
-        <!-- 定位设置 - 集成地图选择 -->
-          <el-form-item label="定位设置" v-if="newTask.checkinType.includes('定位打卡')">
-            <div class="map-search-container">
-              <el-input v-model="searchKeyword" placeholder="搜索地点" clearable @keyup.enter.native="searchPlace" />
-              <el-button @click="searchPlace" icon="el-icon-search" style="margin: 0px;">搜索</el-button>
-              <el-button @click="locateToCurrentPosition" icon="el-icon-location" style="margin: 0px;">定位当前位置</el-button>
+      <h3 class="small">我管理的团队</h3>
+      <el-table :data="paginatedManagedTeams" border>
+        <el-table-column prop="groupId" label="团队编号" align="center" width="80"></el-table-column>
+        <el-table-column prop="groupName" label="团队名称" align="center"></el-table-column>
+        <el-table-column prop="memberCount" label="人数" width="70" align="center"></el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="180" align="center"></el-table-column>
+        <el-table-column label="操作" align="center" width="310">
+          <template slot-scope="scope">
+            <div style="display: flex;">
+              <el-button type="text" @click="getGroupInfo(scope.row.groupId)">查看团队信息</el-button>
+              <el-button type="text" @click="postTask(scope.row)">发布打卡任务</el-button>
+              <el-button type="text" @click="deleteGroup(scope.row)">解散团队</el-button>
             </div>
-            
-            <!-- 百度地图容器 -->
-            <div class="map-container" style="max-height: 250px;max-width: 460px;">
-              <!-- 确保地图容器有唯一ID -->
-              <div id="baidu-map-container" class="bm-view"></div>
-              <div class="selected-address">
-                <span v-if="selectedAddress">已选择: {{ selectedAddress }}</span>
-                <span v-else class="text-gray-400">请在地图上选择打卡位置</span>
-              </div>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pagination">
+        <el-button size="mini" @click="managedPage > 1 ? managedPage-- : null">上一页</el-button>
+        <span>{{ managedPage }}/{{ managedTotalPages }}</span>
+        <el-button size="mini" @click="managedPage < managedTotalPages ? managedPage++ : null">下一页</el-button>
+      </div>
+      
+      <el-dialog title="团队详情" :visible.sync="groupInfoDialogVisible" width="85%" style="margin-top:-5%" center>
+        <div style="display: flex; width: 100%; gap:50px;">
+          <div style="text-align: center;"><!-- 原团队成员信息表格，调整宽度 -->
+            <h3 >团队成员信息</h3>
+            <el-table :data="currentPageMembers" style="width: 100%;">
+                <el-table-column prop="name" label="昵称" width="100" align="center"></el-table-column>
+                <el-table-column prop="id" label="账号" width="85" align="center"></el-table-column>
+                <el-table-column prop="phoneNumber" label="手机号" width="120" align="center"></el-table-column>
+                <el-table-column label="操作" width="80" align="center">
+                  <template #default="scope">
+                    <el-button type="text" @click="removeMember(scope.row)">移出团队</el-button>
+                  </template>
+                </el-table-column>
+            </el-table>
+            <div class="pagination">
+              <el-button @click="prevMemberPage" :disabled="memberCurrentPage === 1">上一页</el-button>
+              <span>{{ memberCurrentPage }}</span> /
+              <span>{{ totalMemberPages }}</span>
+              <el-button @click="nextMemberPage" :disabled="memberCurrentPage === totalMemberPages">下一页</el-button>
             </div>
-            打卡精度选择：
-            <el-radio-group v-model="newTask.accuracy" @change="drawCircle(selectedPoint ? new window.BMap.Point(selectedPoint.lng, selectedPoint.lat) : null)">
-              <el-radio label="50m">50米</el-radio>
-              <el-radio label="100m">100米</el-radio>
-              <el-radio label="200m">200米</el-radio>
-              <el-radio label="500m">500米</el-radio>
-            </el-radio-group>
+          </div>
+          <div style="text-align: center;"><!-- 新增的打卡任务表格 -->
+              <h3>打卡任务列表</h3>
+              <el-table :data="currentPageTasks" style="width: 100%;" >
+                <el-table-column prop="name" label="任务名称" width="100" align="center"></el-table-column>
+                <el-table-column prop="id" label="编号" width="70" align="center"></el-table-column>
+                <el-table-column label="完成情况" align="center">
+                  <template #default="scope">
+                    <span>{{ scope.row.actualCount }}/{{ scope.row.shouldCount }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="endTime" label="截至时间" width="150" align="center"></el-table-column>
+                <el-table-column label="操作" width="150" align="center">
+                    <template #default="scope">
+                      <el-button type="text" @click="getTaskDetail(scope.row)">查看详情</el-button>
+                      <el-button type="text" @click="deleteTask(scope.row)">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+            <div class="pagination">
+              <el-button @click="prevTaskPage" :disabled="taskCurrentPage === 1">上一页</el-button>
+              <span>{{ taskCurrentPage }}</span> /
+              <span>{{ totalTaskPages }}</span>
+              <el-button @click="nextTaskPage" :disabled="taskCurrentPage === totalTaskPages">下一页</el-button>
+            </div>
+          </div>
+          <el-dialog width="40%" title="打卡任务详细信息" :visible.sync="taskDetailsDialogVisible" append-to-body center>
+            <div class="task-detail-container">
+              <p class="task-item">
+                <span class="task-label">任务名称：</span>
+                <span class="task-value">{{ taskDetails.name }}</span>
+              </p>
+              <p class="task-item">
+                <span class="task-label">任务描述：</span>
+                <span class="task-value">{{ taskDetails.description }}</span>
+              </p>
+              <p class="task-item">
+                <span class="task-label">开始时间：</span>
+                <span class="task-value">{{ taskDetails.beginTime }}</span>
+              </p>
+              <p class="task-item">
+                <span class="task-label">结束时间：</span>
+                <span class="task-value">{{ taskDetails.endTime }}</span>
+              </p>
+              <p class="task-item">
+                <span class="task-label">已完成打卡成员：</span>
+                <span class="task-value">{{ taskDetails.completedNameList.join(', ') }}</span>
+              </p>
+              <p class="task-item">
+                <span class="task-label">未完成打卡成员：</span>
+                <span class="task-value">{{ taskDetails.incompleteNameList.join(', ') }}</span>
+              </p>
+              <p class="task-item">
+                <span class="task-label">任务类型：</span>
+                <span class="task-value">{{ taskDetails.type === '都' ? '人脸识别 + 定位打卡' : taskDetails.type }}</span>
+              </p>
+            </div>
+          </el-dialog>
+        </div>
+        <span slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="closeTeamMember">退 出</el-button>
+        </span>
+      </el-dialog>
+      
+      <el-dialog name="发布打卡任务" :visible.sync="postTaskDialogVisible" width="55%" center style="margin-top:-5%; padding:0%">
+        <el-form ref="taskFormRef" :model="newTask" :rules="rules" label-width="100px" size="small" > 
+          <el-form-item label="任务名称" prop="name">
+            <el-input v-model="newTask.name" placeholder="请输入任务名称" />
           </el-form-item>
 
-        <el-form-item label="二维码设置">
-          <el-switch
-            v-model="newTask.isQRcode"
-            active-text="启用"
-            inactive-text="禁用"
-          />
-        </el-form-item>
-      </el-form>
-      <span slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="handlePostTask">发 布</el-button>
-        <el-button @click="cancelPostTask">取 消</el-button>
-      </span>
-    </el-dialog>
+          <el-form-item label="任务描述" prop="description">
+            <el-input type="textarea" v-model="newTask.description" :rows="1" placeholder="请输入任务描述"/>
+          </el-form-item>
+
+          <el-form-item label="打卡类型" prop="checkinType">
+            <el-checkbox-group v-model="newTask.checkinType">
+              <el-checkbox label="人脸识别" />
+              <el-checkbox label="定位打卡" />
+            </el-checkbox-group>
+          </el-form-item>
+
+          <el-form-item label="打卡时段">
+            <el-date-picker
+              v-model="newTask.startTime"
+              type="datetime"
+              placeholder="开始日期时间"
+              :picker-options="{
+                shortcuts: false,
+                format: 'yyyy-MM-dd HH:mm',
+                valueFormat: 'yyyy-MM-dd HH:mm'
+              }"
+            />
+            <span class="mx-2">至</span>
+            <el-date-picker
+              v-model="newTask.endTime"
+              type="datetime"
+              placeholder="结束日期时间"
+              :picker-options="{
+                shortcuts: false,
+                format: 'yyyy-MM-dd HH:mm',
+                valueFormat: 'yyyy-MM-dd HH:mm'
+              }"
+            />
+          </el-form-item>
+          
+          <!-- 定位设置 - 集成地图选择 -->
+            <el-form-item label="定位设置" v-if="newTask.checkinType.includes('定位打卡')">
+              <div class="map-search-container">
+                <el-input v-model="searchKeyword" placeholder="搜索地点" clearable @keyup.enter.native="searchPlace" />
+                <el-button @click="searchPlace" icon="el-icon-search" style="margin: 0px;">搜索</el-button>
+                <el-button @click="locateToCurrentPosition" icon="el-icon-location" style="margin: 0px;">定位当前位置</el-button>
+              </div>
+              
+              <!-- 百度地图容器 -->
+              <div class="map-container" style="max-height: 250px;max-width: 460px;">
+                <!-- 确保地图容器有唯一ID -->
+                <div id="baidu-map-container" class="bm-view"></div>
+                <div class="selected-address">
+                  <span v-if="selectedAddress">已选择: {{ selectedAddress }}</span>
+                  <span v-else class="text-gray-400">请在地图上选择打卡位置</span>
+                </div>
+              </div>
+              打卡精度选择：
+              <el-radio-group v-model="newTask.accuracy" @change="drawCircle(selectedPoint ? new window.BMap.Point(selectedPoint.lng, selectedPoint.lat) : null)">
+                <el-radio label="50m">50米</el-radio>
+                <el-radio label="100m">100米</el-radio>
+                <el-radio label="200m">200米</el-radio>
+                <el-radio label="500m">500米</el-radio>
+              </el-radio-group>
+            </el-form-item>
+
+          <el-form-item label="二维码设置">
+            <el-switch
+              v-model="newTask.isQRcode"
+              active-text="启用"
+              inactive-text="禁用"
+            />
+          </el-form-item>
+        </el-form>
+        <span slot="footer" class="dialog-footer">
+          <el-button type="primary" @click="handlePostTask">发 布</el-button>
+          <el-button @click="cancelPostTask">取 消</el-button>
+        </span>
+      </el-dialog>
+    </div>
   </div>
 </template>
 
 <script>
+/* eslint-disable vue/no-side-effects-in-computed-properties */
 import axios from 'axios';
 
 export default {
@@ -222,117 +229,15 @@ export default {
         "endTime": "2024-10-01 09:30:00",
         "completedNameList":['帅气的xb','帅气的xb','帅气的xb','帅气的xb','帅气的xb','帅气的xb','帅气的xb',],
         "incompleteNameList":[],
-        "taskType":'人脸识别'
+        "type":'人脸识别'
       },
       currentTeam: {
-        memberlist: [
-        {
-          "id":"12121212",
-          "name":"茧之泪殇",
-          "phoneNumber":13013013130
-        },
-        {
-          "id":"11121212",
-          "name":"茧之泪殇",
-          "phoneNumber":13013013130
-        },
-        {
-          "id":"12121212",
-          "name":"茧之泪殇",
-          "phoneNumber":13013013130
-        }
-      ],
-        tasklist:[
-        {
-          "id": 221112,
-          "name": "测试数据2",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "incomplete",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 9,
-          "groupId": 2,
-          "checkinType":'都'
-        },
-        {
-          "id": 312121,
-          "name": "测试数据3",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "groupId": 2,
-          "checkinType": '人脸识别'
-        },{
-          "id": 321212,
-          "name": "测试数据3",
-          "description": "请在 9:00 - 9:30 之间完成打卡",
-          "startTime": "2024-10-01 09:00:00",
-          "endTime": "2024-10-01 09:30:00",
-          "createdTime": "2024-10-01 08:00:00",
-          "status": "completed",
-          "punchTime": "2024-10-01 09:15:00",
-          "shouldCount": 10,
-          "actualCount": 10,
-          "groupId": 2,
-          "checkinType":'人脸识别'
-        }
-        ]
+        memberlist: [],
+        tasklist:[]
       }, // 用于存储当前查看成员信息的团队对象，包含tasklist属性和memberlist属性
       currentTeamId:'', //当前展示成员详情的团队id
-      allJoinedTeams: [
-        {
-          groupId:121212,
-          groupName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          groupId:212121,
-          groupName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          groupId:321212,
-          groupName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        }
-      ], // 存储所有加入的团队数据
-      allManagedTeams: [
-        {
-          groupId:121212,
-          groupName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          groupId:221212,
-          groupName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        },
-        {
-          groupId:312121,
-          groupName:'茧之泪殇',
-          isFull:"否",
-          memberCount:'123',
-          createTime:'2024-10-01 09:15:00'
-        }
-      ], // 存储所有管理的团队数据
+      allJoinedTeams: [], // 存储所有加入的团队数据
+      allManagedTeams: [], // 存储所有管理的团队数据
       joinedPage: 1,
       managedPage: 1,
       pageSize: 3, // 每页显示3条数据
@@ -345,6 +250,7 @@ export default {
       groupInfoDialogVisible:false,
       postTaskDialogVisible :false,
       taskDetailsDialogVisible:false,
+      isLoading:true,
       searchKeyword: '',
       map: null,
       geocoder: null,
@@ -394,14 +300,24 @@ export default {
   computed: {
     // 计算当前页需要显示的加入的团队数据
     paginatedJoinedTeams() {
-      const start = (this.joinedPage - 1) * this.pageSize;
-      const end = start + this.pageSize;
+      let start = (this.joinedPage - 1) * this.pageSize;
+      let end = start + this.pageSize;
+      if(this.allJoinedTeams.slice(start, end).length == 0 && this.joinedPage > 1){
+        this.joinedPage = this.joinedPage - 1;
+        start = start - this.pageSize;
+        end = end - this.pageSize;
+      }
       return this.allJoinedTeams.slice(start, end);
     },
     // 计算当前页需要显示的管理的团队数据
     paginatedManagedTeams() {
-      const start = (this.managedPage - 1) * this.pageSize;
-      const end = start + this.pageSize;
+      let start = (this.managedPage - 1) * this.pageSize;
+      let end = start + this.pageSize;
+      if(this.allManagedTeams.slice(start, end).length == 0 && this.managedPage > 1){
+        this.ma1 = this.managedPage - 1;
+        start = start - this.pageSize;
+        end = end - this.pageSize;
+      }
       return this.allManagedTeams.slice(start, end);
     },
     currentPageMembers() {
@@ -430,6 +346,11 @@ export default {
     }
   },
   mounted() {
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    this.isMobile = mediaQuery.matches;
+    mediaQuery.addEventListener('change', (e) => {
+      this.isMobile = e.matches;
+    });
     this.$nextTick(() => {
     this.checkMapApiLoaded();
   });
@@ -458,6 +379,8 @@ export default {
         if(response.data.state == 1){
           this.taskDetailsDialogVisible = true;
           this.taskDetails = response.data.data;
+          this.taskDetails.beginTime = this.taskDetails.beginTime.replace("T"," ");
+          this.taskDetails.endTime = this.taskDetails.endTime.replace("T"," ");
         }
         else if(response.data.state == 2){
           this.$message.error('获取任务详情失败');
@@ -467,11 +390,16 @@ export default {
       }
     },
     async getGroupInfo(groupId){
+      this.currentTeamId = groupId;
       this.groupInfoDialogVisible = true;
       try{
         const response = await axios.get(`/api/group?groupId=${groupId}`);
         if(response.data.state == 1){
-          this.currentTeam = response.data.data;
+          this.currentTeam.memberlist = response.data.data.memberlist;
+          this.currentTeam.tasklist = response.data.data.tasklist.map(task => ({
+            ...task,
+            endTime:task.endTime.replace("T"," ")
+          }))
         }
         else if(response.data.state == 2){
           this.$message.error('获取团队信息失败！');
@@ -482,27 +410,34 @@ export default {
       
     },
     async fetchAllTeams() {
+      this.isLoading = true;
       try {
         const id = this.$store.getters.getid;
-        // 获取加入的团队
-        const joinedResponse = await axios.get(`/api/getjoinedgroups?id=${id}`);
-        if(joinedResponse.data.state == 1){
-          this.allJoinedTeams = joinedResponse.data.data.joinedGroups || [];
-        }
-        else if(joinedResponse.data.state == 2){
+        const [joinedResponse, managedResponse] = await Promise.all([
+          axios.get(`/api/getjoinedgroups?id=${id}`),
+          axios.get(`/api/getmanagedgroups?id=${id}`)
+        ]);
+        if(joinedResponse.data.state === 1){
+          this.allJoinedTeams = joinedResponse.data.data.joinedGroups.map(group => ({
+            ...group,
+            createTime:group.createTime.replace("T"," ")
+          })) || [];
+        } else if(joinedResponse.data.state === 2){
           this.$message.error('获取加入团队信息失败！');
         }
-
-        // 获取管理的团队
-        const managedResponse = await axios.get(`/api/getmanagedgroups?id=${id}`);
-        if(managedResponse.data.state == 1){
-          this.allManagedTeams = managedResponse.data.data.manegerGroups || [];
-        }
-        else if(managedResponse.data.state == 2){
+        if(managedResponse.data.state === 1){
+          this.allManagedTeams = managedResponse.data.data.manegedGroups.map(group => ({
+            ...group,
+            createTime:group.createTime.replace("T"," ")
+          })) || [];
+        } else if(managedResponse.data.state === 2){
           this.$message.error('获取管理团队信息失败！');
         }
       } catch {
         this.$message.error('请求发送失败，请检查网络或联系管理员');
+      } 
+      finally{
+        this.isLoading = false;
       }
     },
     async handleExit(row){
@@ -515,7 +450,7 @@ export default {
           try{
             const response = await axios.post('/api/quitgroup',{
             "id":id,
-            "groupId":row.id
+            "groupId":row.groupId
           });
           if(response.data.state == 1){
             this.$message.success('退出团队成功！');
@@ -763,14 +698,14 @@ export default {
     },
 
     deleteGroup(row){
-      this.$confirm("是否确定将解散团队"+row.name, '提示', {
+      this.$confirm("是否确定将解散团队"+row.groupName, '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
         }).then(async () => {
           try {
             const id = this.$store.getters.getid;
-            const groupid = row.id;
+            const groupid = row.groupId;
             const response = await axios.delete(`/api/deletegroup?userId=${id}&groupId=${groupid}`);
             if(response.data.state == 1){
               this.$message.success('解散团队成功!');
@@ -788,6 +723,11 @@ export default {
     },
 
     removeMember(row){
+      console.log(this.$store.getters.getid)
+      if(row.id == this.$store.getters.getid){
+        this.$message.error('无法移除创建者自身！');
+        return;
+      }
       this.$confirm("是否确定将"+row.name+" 移出团队？", '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
@@ -796,7 +736,7 @@ export default {
           try {
             const id = row.id;
             const groupid = this.currentTeamId;
-            const response = await axios.post('/api/removesb', {
+            const response = await axios.post('/api/quitgroup', {
               "id":id,
               "groupId":groupid
             });
@@ -887,20 +827,19 @@ export default {
           type = this.newTask.checkinType[0];
         }
             const response = await axios.post('/api/createtask', {
-              "groupid":this.newTask.groupId,
+              "groupId":this.newTask.groupId,
               "name":this.newTask.name,
               "beginTime":this.newTask.startTime,
               "endTime":this.newTask.endTime,
               "description":this.newTask.description,
               "type":type,
               "isQRcode":this.newTask.isQRcode,
-              "Latitude":this.newTask.Latitude,
-              "Longitude":this.newTask.Longitude,
+              "latitude":this.newTask.Latitude,
+              "longitude":this.newTask.Longitude,
               "accuracy": this.newTask.accuracy.replace('m', '')
             });
             if(response.data.state == 1){
               this.$message.success('发布打卡任务成功!');
-              this.getGroupInfo(this.currentTeamId);
               this.cancelPostTask();
             }
             else if(response.data.state == 2){

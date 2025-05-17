@@ -20,8 +20,8 @@
 export default{
     data(){
         return {
-
-        }
+            isMobile:false,
+        };
     },
     methods:{
         JumptoRegister(){

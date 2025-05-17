@@ -1,13 +1,13 @@
 <template>
     <div class="quick-login-container">
-        <el-main>
-            <div class="login-wrapper">
+        <div class="login-wrapper">
             <div class="login-form">
+                <h3 class="center">注册账号</h3>
                 <el-tabs v-model="activeTab" type="card" class="login-tabs">
-                    <h3 class="center">注册账号</h3>
+                    
                     <el-form :model="form" @submit.native.prevent="handleSubmit">
                         <el-form-item>
-                            <br><el-input v-model="form.username" placeholder="请输入2-8位用户名" prefix-icon="el-icon-user"></el-input>
+                            <el-input v-model="form.username" placeholder="请输入2-8位用户名" prefix-icon="el-icon-user"></el-input>
                         </el-form-item>
                         <el-form-item>
                             <el-input v-model="form.usercode" placeholder="请输入4-12位密码" prefix-icon="el-icon-lock" show-password></el-input>
@@ -18,12 +18,12 @@
                         <el-form-item>
                             <el-input v-model="form.phoneNumber" placeholder="请输入手机号" prefix-icon="el-icon-phone-outline"></el-input>
                         </el-form-item>
-                        <el-form-item>
+                        <el-form-item class="mobileVercode">
                             <el-row :gutter="15">
-                                <el-col :span="13">
-                                    <el-input v-model="form.verificationCode" placeholder="请输入验证码" prefix-icon="el-icon-lock-outline"></el-input>
+                                <el-col :span="isMobile?14:13">
+                                    <el-input v-model="form.verificationCode" placeholder="请输入验证码" prefix-icon="el-icon-lock"></el-input>
                                 </el-col>
-                                <el-col :span="11" style="display: flex;">
+                                <el-col :span="isMobile?10:9" style="display: flex;">
                                     <el-button @click="getVerificationCode" :loading="countdown > 0">
                                         {{ countdown > 0? countdown : '获取验证码' }}
                                     </el-button>
@@ -42,8 +42,7 @@
                 <p class="register-link">已有账号？ <router-link to="/login">去登陆</router-link></p>
             </div>
             </div>
-        </el-main>
-        </div>
+            </div>
     </template>
 
 
@@ -67,10 +66,16 @@ export default {
         phoneReg:/^1[3-9]\d{9}$/,
         vercodeReg:/^\d{6}$/,
         nameReg:/^([\u4e00-\u9fa5]|\w){2,8}$/,
-        showTooltip:false
+        showTooltip:false,
+        isMobile:false
         };
     },
     mounted() {
+        const mediaQuery = window.matchMedia('(max-width: 768px)');
+        this.isMobile = mediaQuery.matches;
+        mediaQuery.addEventListener('change', (e) => {
+        this.isMobile = e.matches;
+        });
         window.addEventListener('resize', this.handleResize);
         this.handleResize();
     },
@@ -150,7 +155,7 @@ export default {
                     return;
                 }
                 else if(res.data.state == 3){
-                    this.$message.error('验证码已过期！');
+                    this.$message.error('手机号不存在或验证码已过期！');
                     return;
                 }
             } catch{
@@ -196,11 +201,15 @@ export default {
         this.$message.info('暂未实现，敬请期待');
         },
         handleResize() {
-        const logoImg = document.getElementById('logo-img');
-        if (logoImg) {
-            // 由于 CSS 已经实现按比例缩放，这里可不做额外处理
-            // 可根据需求添加自定义缩放逻辑
-        }
+            const logoImg = document.getElementById('logo-img');
+            if (logoImg) {
+                // 由于 CSS 已经实现按比例缩放，这里可不做额外处理
+                // 可根据需求添加自定义缩放逻辑
+            }
+        },
+        saveDataToLocalStorage(key, data) {
+            const jsonData = JSON.stringify(data);
+            localStorage.setItem(key, jsonData);
         }
     }
 };
@@ -262,7 +271,7 @@ export default {
 
 .register-link {
   text-align: center;
-  margin-top: 15px;
+  margin: 0;
 }
 
 .register-link a {
@@ -311,5 +320,71 @@ export default {
 .tooltip:hover.tooltiptext {
   visibility: visible;
   opacity: 1;
+}
+
+
+
+
+
+
+
+@media (max-width: 768px) {
+    .center{
+    font-size: 20px;
+    display: flex;
+    justify-content: center;
+    margin:10px
+}
+    .quick-login-container{
+    background-color: rgb(194, 238, 252);
+    width: 100%;
+    height: auto;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+  }
+
+  .login-form {
+    background-color: rgb(194, 238, 252);
+    width: 300px;
+    padding: 10px 20px 10px 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px white;
+  }
+
+    .el-form-item {
+        margin-bottom: 8px;
+        margin-left: 11px;
+        margin-right: 11px;
+    }
+    .el-button{
+        height: 38px;
+        padding: 15px;
+    }
+
+   .mobileVercode{
+    margin-left: 12px;
+    margin-right: 25px;
+   }
+
+
+
+  .tooltiptext {
+    font-size: 8px;
+    width: 120px;
+    height: 35px;
+    background-color: black;
+    color: white;
+    text-align: left;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 100;
+    padding: 5px;
+    margin-right: 10px;
+    opacity: .7;
+    transition: opacity 0.3s;
+  }
+
+
 }
 </style>
