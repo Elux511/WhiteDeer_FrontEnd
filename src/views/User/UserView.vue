@@ -241,7 +241,7 @@
       async syncServerTime() {
       try {
         // 替换为您的实际服务器时间API
-        const response = await axios.get('/api/time');
+        const response = await axios.get('http://localhost:8080/api/time');
         
         if (!response.ok) {
           throw new Error(`服务器响应错误: ${response.status}`)

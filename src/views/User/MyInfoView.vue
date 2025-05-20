@@ -392,7 +392,10 @@ export default {
     async startCamera() {
       this.stopCamera();
       try {
-        this.photoParameter.mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const constraints = {
+          video: { deviceId: { exact: this.selectedCameraDeviceId } }
+        };
+        this.photoParameter.mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
         this.$refs.video.srcObject = this.photoParameter.mediaStream;
         this.$refs.video.play();
         this.photoParameter.isCameraWorking = true;
@@ -521,6 +524,30 @@ export default {
 </script>
 
 <style scoped>
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(52, 152, 219, 0.3);
+  border-radius: 50%;
+  border-top-color: #3498db;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 .user-info-container {
   padding: 20px;
   width: 600px;
