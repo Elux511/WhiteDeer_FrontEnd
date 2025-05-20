@@ -1,62 +1,92 @@
 <template>
   <div>
     <div class="user-view-container">
+      <el-row :span="1">
+        <el-button v-if="isMobile"
+              @click="toggleCollapse"
+              :icon="isCollapsed ? 'el-icon-arrow-right' : 'el-icon-arrow-left'"
+              circle
+              size="small">
+              {{ isCollapsed ? '展开菜单' : '收起菜单' }}
+            </el-button>
+      </el-row>
       <el-row>
         <!-- 左侧导航栏 -->
-        <el-col :span="6">
-          <el-menu
-            :default-active="activeMenu"
-            class="el-menu-vertical-demo"
-            @select="handleMenuSelect"
-          >
-            <el-menu-item index="checkin">我的打卡</el-menu-item>
-            <el-menu-item index="join-team">加入团队</el-menu-item>
-            <el-menu-item index="my-team">我的团队</el-menu-item>
-            <el-menu-item index="personal-info">个人信息</el-menu-item>
-          </el-menu>
-          <div class="server-clock-container">
-            <div v-if="loading" class="loading-indicator">
-              <div class="spinner"></div>
-              <p>正在同步服务器时间...</p>
-            </div>
-            <div v-else class="clock-wrapper">
-              <!-- 数字时钟 -->
-              <div class="digital-clock">
-                <span class="time-unit" :class="{ 'pulse': animateSeparator }">{{ hours }}</span>
-                <span class="separator">{{ separator }}</span>
-                <span class="time-unit">{{ minutes }}</span>
-                <span class="separator">{{ separator }}</span>
-                <span class="time-unit">{{ seconds }}</span>
-                <span class="period">{{ period }}</span>
+        <el-col :span="isCollapsed?0:6">
+          <div class="user-view-sider" :class="{ 'collapsed': isCollapsed }">
+            <el-menu
+              :default-active="activeMenu"
+              :collapse="isMobile?isCollapsed:false"
+              class="el-menu-vertical-demo"
+              @select="handleMenuSelect"
+            >
+              <el-menu-item index="checkin">
+                <i v-if="!isCollapsed" class="el-icon-s-claim"></i>
+                <span slot="title">我的打卡</span>
+              </el-menu-item>
+              <el-menu-item index="join-team">
+                <i v-if="!isCollapsed" class="el-icon-s-opportunity"></i>
+                <span slot="title">加入团队</span>
+              </el-menu-item>
+              <el-menu-item index="my-team">
+                <i v-if="!isCollapsed" class="el-icon-s-cooperation"></i>
+                <span slot="title">我的团队</span>
+              </el-menu-item>
+              <el-menu-item index="personal-info">
+                <i v-if="!isCollapsed" class="el-icon-user"></i>
+                <span slot="title">个人信息</span>
+              </el-menu-item>
+            </el-menu>
+            <div v-if="!isMobile" class="server-clock-container">
+              <div v-if="loading" class="loading-indicator">
+                <div class="spinner"></div>
+                <p>正在同步服务器时间...</p>
               </div>
-              
-              <!-- 模拟时钟 -->
-              <div class="analog-clock" v-if="serverTime">
-                <div class="clock-face">
-                  <!-- 时钟刻度 -->
-                  <div v-for="i in 60" :key="i" 
-                      class="clock-mark"
-                      :class="{ 'hour-mark': i % 5 === 0 }"
-                      :style="{ transform: `rotate(${i * 6}deg)` }"></div>
-                  
-                  <!-- 指针 -->
-                  <div class="hand hour-hand" 
-                      :style="{ transform: `rotate(${hourAngle}deg)` }"></div>
-                  <div class="hand minute-hand" 
-                      :style="{ transform: `rotate(${minuteAngle}deg)` }"></div>
-                  <div class="hand second-hand" 
-                      :style="{ transform: `rotate(${secondAngle}deg)` }"></div>
-                  
-                  <!-- 中心点 -->
-                  <div class="center-point"></div>
+              <div v-else class="clock-wrapper">
+                <!-- 数字时钟 -->
+                <div class="digital-clock">
+                  <span class="time-unit" :class="{ 'pulse': animateSeparator }">{{ hours }}</span>
+                  <span class="separator">{{ separator }}</span>
+                  <span class="time-unit">{{ minutes }}</span>
+                  <span class="separator">{{ separator }}</span>
+                  <span class="time-unit">{{ seconds }}</span>
+                  <span class="period">{{ period }}</span>
+                </div>
+                
+                <!-- 模拟时钟 -->
+                <div class="analog-clock" v-if="serverTime">
+                  <div class="clock-face">
+                    <!-- 时钟刻度 -->
+                    <div v-for="i in 60" :key="i" 
+                        class="clock-mark"
+                        :class="{ 'hour-mark': i % 5 === 0 }"
+                        :style="{ transform: `rotate(${i * 6}deg)` }"></div>
+                    
+                    <!-- 指针 -->
+                    <div class="hand hour-hand" 
+                        :style="{ transform: `rotate(${hourAngle}deg)` }"></div>
+                    <div class="hand minute-hand" 
+                        :style="{ transform: `rotate(${minuteAngle}deg)` }"></div>
+                    <div class="hand second-hand" 
+                        :style="{ transform: `rotate(${secondAngle}deg)` }"></div>
+                    
+                    <!-- 中心点 -->
+                    <div class="center-point"></div>
+                  </div>
                 </div>
               </div>
             </div>
+            <el-button 
+              type="primary" 
+              v-if="!isCollapsed"
+              @click="logout"  
+              :class="{ 'button-normal':!isMobile, 'button-collapsed': isMobile }"
+              >注销账号
+            </el-button>
           </div>
-          <el-button type="primary" @click="logout" style="margin-left:30%;">注销账号</el-button>
         </el-col>
         <!-- 右侧内容展示区域 -->
-        <el-col :span="18">
+        <el-col :span="isMobile?24:18">
           <component :is="currentComponent"></component>
         </el-col>
       </el-row>
@@ -105,7 +135,7 @@
     data() {
       return {
         activeMenu: 'checkin',
-        currentComponent: MyCheckin,//插眼
+        currentComponent: MyCheckin,
         serverTime: null,
       timeDiff: 0,
       loading: true,
@@ -124,6 +154,9 @@
         isCameraWorking:false,
         cameraDevices: []
       },
+      
+      isMobile:false,
+      isCollapsed:false
       };
     },
     computed: {
@@ -159,6 +192,17 @@
     secondAngle() {
       if (!this.serverTime) return 0
       return this.serverTime.getSeconds() * 6
+    },
+    buttonStyle() {
+      if (this.isMobile) {
+        return {
+          marginLeft: '16%'
+        };
+      } else {
+        return {
+          marginLeft: '30%'
+        };
+      }
     }
   },
   mounted() {
@@ -168,16 +212,18 @@
       this.isMobile = e.matches;
     });
     this.checkFace();
-    this.syncServerTime();
+    if(!this.isMobile){
+      this.syncServerTime();
+      // 每秒更新一次时间
+      this.timer = setInterval(() => {
+        if (this.serverTime) {
+          this.serverTime = new Date(Date.now() + this.timeDiff)
+          // 每秒钟切换分隔符的动画状态
+          this.animateSeparator = !this.animateSeparator
+        }
+      }, 1000)
+    }
     this.enumerateCameras();
-    // 每秒更新一次时间
-    this.timer = setInterval(() => {
-      if (this.serverTime) {
-        this.serverTime = new Date(Date.now() + this.timeDiff)
-        // 每秒钟切换分隔符的动画状态
-        this.animateSeparator = !this.animateSeparator
-      }
-    }, 1000)
   },
   beforeDestroy() {
     clearInterval(this.timer)
@@ -374,6 +420,9 @@
             this.stopCamera();
           }
           this.resetPhotoParameter();
+        },
+        toggleCollapse(){
+          this.isCollapsed = !this.isCollapsed;
         }
     }
   };
@@ -595,6 +644,25 @@ button{
   margin:0px;
 }
 
+.button-normal {
+  margin-left: 30%;
+}
+.button-collapsed {
+  margin: 11%;
+}
+
+@media (max-width: 768px){
+  .user-view-sider{
+    position:absolute;
+    z-index: 100;
+    background-color: #fff;
+    box-shadow: 2px 0 6px rgba(0, 21, 41, 0.15);
+    transition: width 0.3s ease, background-color 0.3s ease;
+  }
+  .user-view-sider.collapsed{
+    max-width: 10px;
+  }
+}
 
 
   </style>

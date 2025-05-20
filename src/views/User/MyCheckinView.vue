@@ -10,11 +10,14 @@
           <el-radio label="incomplete">未完成</el-radio>
           <el-radio label="completed">已完成</el-radio>
         </el-radio-group>
+        <el-input v-if="!isMobile" placeholder="输入标题搜索打卡任务" v-model="searchKeyword" suffix-icon="el-icon-search"></el-input>
+      </div>
+      <div v-if="isMobile" style="padding-top: 5px;">
         <el-input placeholder="输入标题搜索打卡任务" v-model="searchKeyword" suffix-icon="el-icon-search"></el-input>
       </div>
       <el-row :gutter="20">
         <h2 v-if="tasks.length == 0" style="text-align: center;">暂无数据</h2>
-        <el-col :span="8" v-for="(task, index) in filteredTasks" :key="index">
+        <el-col :span="isMobile?24:8" v-for="(task, index) in filteredTasks" :key="index">
           <el-card class="task-card">
               <div class="task-title">{{ task.name }}</div>
               <div class="task-time">
@@ -54,23 +57,27 @@
           <el-button @click="nextPage" :disabled="currentPage === totalPages">下一页</el-button>
         </div>
         <el-dialog title="上传照片" :visible.sync="checkinDialogVisible" width="55%" style="margin-top:-5%" center custom-class="custom-checkin-dialog">
-          <div v-if="photoParameter.cameraDevices.length > 1">
-            选择调用的摄像头设备：
-            <el-select v-model="selectedCameraDeviceId" placeholder="选择摄像头">
-              <el-option
-                v-for="device in photoParameter.cameraDevices"
-                :key="device.deviceId"
-                :label="device.label"
-                :value="device.deviceId"
-              ></el-option>
-            </el-select>
+          <div style="display: flex;">
+            <div v-if="photoParameter.cameraDevices.length > 1">
+              选择调用的摄像头设备：<el-select v-model="selectedCameraDeviceId" placeholder="选择摄像头">
+                <el-option
+                  v-for="device in photoParameter.cameraDevices"
+                  :key="device.deviceId"
+                  :label="device.label"
+                  :value="device.deviceId"
+                ></el-option>
+              </el-select>
+            </div>
+            <div>
+              <h3>注意：当照片出现多张人脸时只识别最大的人脸</h3>
+            </div>
           </div>
           <div class="video-container">
             <video ref="video" autoplay playsinline></video>
             <img  v-if="photoParameter.showingPicture" :src="photoParameter.imageUrl" alt="Displayed Image" />
           </div>
           <div class="button-container">
-            <button @click="startCamera">启动摄像头</button>
+            <button @click="debounceStartCamera">启动摄像头</button>
             <button @click="stopCamera">关闭摄像头</button>
             <button v-if="!photoParameter.showingPicture" @click="captureImage">拍照</button>
             <button v-if="photoParameter.isCaptured" @click="submitImage">提交</button>
@@ -116,7 +123,8 @@ export default {
       userLongitude: null, // 用户的经度
       locationError: null, // 存储位置获取的错误信息
       locationSuccess:true,
-      isLoading:true
+      isLoading:true,
+      cameraDebounceTimer: null  //防抖
     };
   },
   computed: {
@@ -159,6 +167,9 @@ export default {
     mediaQuery.addEventListener('change', (e) => {
       this.isMobile = e.matches;
     });
+    if(this.isMobile){
+      this.pageSize = 3;
+    }
     this.fetchTasks();
     this.enumerateCameras();
   },
@@ -265,7 +276,18 @@ export default {
         console.error('枚举摄像头失败:', error);
       }
     },
+    debounceStartCamera() {
+      if (this.cameraDebounceTimer) {
+        clearTimeout(this.cameraDebounceTimer);
+      }
+      
+      this.cameraDebounceTimer = setTimeout(async () => {
+        await this.startCamera();
+        this.cameraDebounceTimer = null;
+      }, 300); // 300ms防抖延迟
+    },
     async startCamera() {
+      this.stopCamera();
       try {
         const constraints = {
           video: { deviceId: { exact: this.selectedCameraDeviceId } }
@@ -523,6 +545,27 @@ span{
   /*height: 50%;  自动高度 */
   transform: translateY(50vh) !important; /* 先下移到屏幕中央 */
   top: -50% !important; /* 再上移自身高度的一半 */
+}
+
+@media (max-width: 768px){
+  .task-container{
+    margin: 0;
+    padding: 0;
+  }
+
+  .task-card {
+    border: 1px solid #ccc;
+    padding: 0;
+    margin: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+.pagination-container {
+    text-align: center;
+    margin-top: 0;
+}
 }
 
 

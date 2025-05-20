@@ -5,7 +5,8 @@
     </div>
     <div class="user-info-container">
       <div class="user-info-item">
-        <span class="label">账号:</span>
+        <span class="label" v-if="!isMobile" style="width:85px">账号:</span>
+        <span class="label" v-if="isMobile" style="width:50px">账号:</span>
         <span class="value">{{ userInfo.id }}</span>
         <el-button type="text" @click="changePasswordDialogVisible = true" class="button-margin">修改密码</el-button>
         <el-dialog title="修改密码" :visible.sync="changePasswordDialogVisible" width="30%" center>
@@ -75,22 +76,27 @@
           <span v-else>上传照片</span>
         </el-button>
         <el-dialog title="修改照片" :visible.sync="changePhotoDialogVisible" width="55%" style="margin-top:-5%" center>
-          <div v-if="photoParameter.cameraDevices.length > 1">
-            选择调用的摄像头设备：<el-select v-model="selectedCameraDeviceId" placeholder="选择摄像头">
-              <el-option
-                v-for="device in photoParameter.cameraDevices"
-                :key="device.deviceId"
-                :label="device.label"
-                :value="device.deviceId"
-              ></el-option>
-            </el-select>
+          <div style="display: flex;">
+            <div v-if="photoParameter.cameraDevices.length > 1">
+              选择调用的摄像头设备：<el-select v-model="selectedCameraDeviceId" placeholder="选择摄像头">
+                <el-option
+                  v-for="device in photoParameter.cameraDevices"
+                  :key="device.deviceId"
+                  :label="device.label"
+                  :value="device.deviceId"
+                ></el-option>
+              </el-select>
+            </div>
+            <div>
+              <h3>注意：当照片出现多张人脸时只识别最大的人脸</h3>
+            </div>
           </div>
             <div class="video-container">
               <video ref="video" autoplay playsinline></video>
               <img  v-if="photoParameter.showingPicture" :src="photoParameter.imageUrl" alt="Displayed Image" />
             </div>
             <div class="button-container">
-              <button @click="startCamera">启动摄像头</button>
+              <button @click="debounceStartCamera">启动摄像头</button>
               <button @click="stopCamera">关闭摄像头</button>
               <button v-if="!photoParameter.showingPicture" @click="captureImage">拍照</button>
               <button v-if="photoParameter.isCaptured" @click="submitImage">提交</button>
@@ -155,7 +161,9 @@ export default {
       timer:null,
       selectedCameraDeviceId: '', //存储用户选择的摄像头设备ID
       showTooltip:false,
-      isLoading:true
+      isLoading:true,
+      isMobile:false,
+      cameraDebounceTimer: null  //防抖
     };
   },
   mounted() {
@@ -371,7 +379,18 @@ export default {
         console.error('枚举摄像头失败:', error);
       }
     },
+    debounceStartCamera() {
+      if (this.cameraDebounceTimer) {
+        clearTimeout(this.cameraDebounceTimer);
+      }
+      
+      this.cameraDebounceTimer = setTimeout(async () => {
+        await this.startCamera();
+        this.cameraDebounceTimer = null;
+      }, 300); // 300ms防抖延迟
+    },
     async startCamera() {
+      this.stopCamera();
       try {
         this.photoParameter.mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
         this.$refs.video.srcObject = this.photoParameter.mediaStream;
@@ -452,6 +471,9 @@ export default {
             }
             else if(response.data.state == 2){
               this.$message.error('照片保存失败！');
+            }
+            else if(response.data.state == 4){
+              this.$message.error('未识别到人脸，请重试');
             }
           } catch {
             this.$message.error('请求发送失败，请检查网络或联系管理员');
@@ -651,5 +673,42 @@ export default {
 .tooltip:hover.tooltiptext {
   visibility: visible;
   opacity: 1;
+}
+
+
+
+
+@media (max-width: 768px){
+  .user-info-container {
+    padding: 0;
+    padding-top: 20px;
+    width: 100%;
+    min-height: 600px;
+    margin: 0 auto;
+  }
+
+
+  .label {
+    width: auto;
+    margin-right: 0;
+  }
+  .value {
+    padding-left: 0;
+  }
+
+  .photo-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+  }
+
+  .photo-display {
+    width: 100%;
+    height: auto;
+    background-color: #eee;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 }
 </style>    

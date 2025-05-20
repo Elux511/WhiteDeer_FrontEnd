@@ -4,7 +4,7 @@
       <div class="loading-spinner"></div>
     </div>
     <div class="team-search-container">
-      <div class="search-filters">
+      <div v-if="!isMobile" class="search-filters">
         <el-input placeholder="请输入团队编号" v-model="groupId" class="input-width"></el-input>
         <el-input placeholder="请输入团队名称" v-model="groupName" class="input-width"></el-input>
         <el-date-picker
@@ -21,7 +21,34 @@
         ></el-date-picker>
         <el-button type="primary" @click="searchTeams">查询</el-button>
         <el-button type="primary" @click="createTeamParameter.createTeamDialogVisible = true">创建我的团队</el-button>
-        <el-dialog title="创建团队" :visible.sync="createTeamParameter.createTeamDialogVisible" width="30%" center>
+      </div>
+      <div v-if="isMobile">
+        <div style="display: flex; margin-top: 20px;">
+          <el-input placeholder="请输入团队编号" v-model="groupId" class="input-width" style="margin: 5px 10px 5px 10px;"></el-input>
+          <el-input placeholder="请输入团队名称" v-model="groupName" class="input-width" style="margin: 5px 10px 5px 10px;"></el-input>
+        </div>
+        <div style="display: flex;">
+          <el-date-picker
+            v-model="startDate"
+            type="date"
+            placeholder="创建起始日期"
+            class="input-width"
+            style="margin: 5px 10px 5px 10px;"
+          ></el-date-picker>
+          <el-date-picker
+            v-model="endDate"
+            type="date"
+            placeholder="创建终止日期"
+            class="input-width"
+            style="margin: 5px 10px 5px 10px;"
+          ></el-date-picker>
+        </div>
+        <div style="display: flex; justify-content: center;">
+          <el-button type="primary" @click="searchTeams" style="margin: 5px 10px 5px 10px;">查询</el-button>
+          <el-button type="primary" @click="createTeamParameter.createTeamDialogVisible = true" style="margin: 5px 10px 5px 10px;">创建我的团队</el-button>
+        </div>
+      </div>
+      <el-dialog title="创建团队" :visible.sync="createTeamParameter.createTeamDialogVisible" width="30%" center>
           <el-form>
             <el-form-item label="请输入团队名称(不超过10个字符)：">
               <el-input v-model="createTeamParameter.groupName"></el-input>
@@ -37,14 +64,13 @@
             <el-button type="primary"  @click="handleCreateTeam">创 建</el-button>
             <el-button @click="cancleCreateTeam">取 消</el-button>
           </span>
-        </el-dialog>
-      </div>
+      </el-dialog>
       <el-table :data="filteredTeams" border>
         <el-table-column prop="groupId" label="团队编号" width="80"></el-table-column>
-        <el-table-column prop="groupName" label="团队名称" width="200"></el-table-column>
-        <el-table-column prop="isFull" label="是否满员" width="80"></el-table-column>
+        <el-table-column prop="groupName" label="团队名称" width="isMobile?0:200"></el-table-column>
+        <el-table-column v-if="!isMobile" prop="isFull" label="是否满员" width="80"></el-table-column>
         <el-table-column prop="memberCount" label="人数"></el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="200"></el-table-column>
+        <el-table-column v-if="!isMobile" prop="createTime" label="创建时间" width="200"></el-table-column>
         <el-table-column label="操作">
           <template slot-scope="scope">
             <el-button type="text" v-if="scope.row.isFull === '否'"  @click="joinTeam(scope.row)">加入</el-button>
@@ -83,7 +109,8 @@ export default {
         groupNumberMaximum: 500,
         groupIntroduction: ''
       },
-      isLoading:true
+      isLoading:true,
+      isMobile:false
     };
   },
   methods: {
@@ -251,5 +278,12 @@ export default {
 .pagination-container {
     text-align: center;
     margin-top: 20px;
+}
+
+
+@media (max-width: 768px){
+  .team-search-container {
+    padding: 0;
+  }
 }
 </style>

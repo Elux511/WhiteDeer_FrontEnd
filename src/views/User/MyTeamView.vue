@@ -9,8 +9,8 @@
       <el-table :data="paginatedJoinedTeams" border>
         <el-table-column prop="groupId" label="团队编号" align="center" width="80"></el-table-column>
         <el-table-column prop="groupName" label="团队名称" align="center"></el-table-column>
-        <el-table-column prop="memberCount" label="人数" width="130" align="center"></el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" align="center"></el-table-column>
+        <el-table-column prop="memberCount" label="人数" width="isMobile?40:130" align="center"></el-table-column>
+        <el-table-column v-if="!isMobile" prop="createTime" label="创建时间" width="180" align="center"></el-table-column>
         <el-table-column label="操作" align="center">
           <template slot-scope="scope">
             <el-button type="text" @click="handleExit(scope.row)">退出团队</el-button>
@@ -27,8 +27,8 @@
       <el-table :data="paginatedManagedTeams" border>
         <el-table-column prop="groupId" label="团队编号" align="center" width="80"></el-table-column>
         <el-table-column prop="groupName" label="团队名称" align="center"></el-table-column>
-        <el-table-column prop="memberCount" label="人数" width="70" align="center"></el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" align="center"></el-table-column>
+        <el-table-column prop="memberCount" label="人数" width="isMobile?40:70" align="center"></el-table-column>
+        <el-table-column v-if="!isMobile" prop="createTime" label="创建时间" width="180" align="center"></el-table-column>
         <el-table-column label="操作" align="center" width="310">
           <template slot-scope="scope">
             <div style="display: flex;">
@@ -273,7 +273,8 @@ export default {
         Longitude:"",          //经度
         accuracy: "",  // 定位精度（如"100m"）
         mapLoadRetries:0,      //地图加载次数
-        circleOverlay: null // 新增：存储地图上绘制的圆实例
+        circleOverlay: null, // 新增：存储地图上绘制的圆实例
+        isMobile:false
       },
       rules: {
         name: [
@@ -351,6 +352,9 @@ export default {
     mediaQuery.addEventListener('change', (e) => {
       this.isMobile = e.matches;
     });
+    if(this.isMobile){
+      this.pageSize = 4;
+    }
     this.$nextTick(() => {
     this.checkMapApiLoaded();
   });
@@ -956,5 +960,14 @@ export default {
   color: #303133;
 }
 
+
+
+
+@media (max-width: 768px) {
+  .team-container {
+    padding: 0;
+    min-height: 600px;
+  }
+}
 </style>
 
