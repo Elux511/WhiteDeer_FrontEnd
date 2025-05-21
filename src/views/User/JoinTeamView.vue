@@ -150,13 +150,13 @@ export default {
         this.isLoading = false;
       }
     },
-    resetFilters() {
+    async resetFilters() {
       this.groupId = '';
       this.groupName = '';
       this.startDate = '';
       this.endDate = '';
       this.currentPage = 1;
-      this.searchTeams();
+      await this.searchTeams();
     },
     joinTeam(row) {
       this.$confirm('是否确定加入团队'+row.groupName, '提示', {
@@ -173,7 +173,7 @@ export default {
             });
             if(response.data.state == 1){
               this.$message.success('加入团队成功!');
-              this.searchTeams();
+              await this.searchTeams();
             }
             else if(response.data.state == 2){
               this.$message.error('加入团队失败!');
@@ -190,13 +190,9 @@ export default {
           this.$message('已取消加入');
         });
     },
-    handlePageChange(page) {
-      this.currentPage = page;
-      this.searchTeams();
-    },
     async handleCreateTeam() {
       if (this.createTeamParameter.groupName.length > 10
-        || this.createTeamParameter.groupName.length == 0) {
+        || this.createTeamParameter.groupName.length === 0) {
         this.$message.warning("请正确输入团队名称!");
         return;
       }
@@ -218,8 +214,7 @@ export default {
         });
         if(response.data.state == 1){
           this.$message.success('创建团队成功！');
-          this.searchTeams();
-          this.cancleCreateTeam();
+          await this.cancleCreateTeam();
         }
         else if(response.data.state == 2){
           this.$message.error('创建团队失败！');
@@ -228,11 +223,12 @@ export default {
         this.$message.error('请求发送失败，请检查网络或联系管理员');
       }
     },
-    cancleCreateTeam() {
+    async cancleCreateTeam() {
       this.createTeamParameter.createTeamDialogVisible = false;
       this.createTeamParameter.groupIntroduction = '';
       this.createTeamParameter.groupName = '';
       this.createTeamParameter.groupNumberMaximum = 1;
+      await this.resetFilters();
     }
   },
   mounted() {

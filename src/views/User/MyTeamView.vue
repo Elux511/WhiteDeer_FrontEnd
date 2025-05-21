@@ -129,7 +129,7 @@
         </span>
       </el-dialog>
       
-      <el-dialog name="发布打卡任务" :visible.sync="postTaskDialogVisible" width="55%" center style="margin-top:-5%; padding:0%">
+      <el-dialog name="发布打卡任务" :visible.sync="postTaskDialogVisible" width="55%" center style="margin-top:-5%; padding:0">
         <el-form ref="taskFormRef" :model="newTask" :rules="rules" label-width="100px" size="small" > 
           <el-form-item label="任务名称" prop="name">
             <el-input v-model="newTask.name" placeholder="请输入任务名称" />
@@ -174,8 +174,8 @@
             <el-form-item label="定位设置" v-if="newTask.checkinType.includes('定位打卡')">
               <div class="map-search-container">
                 <el-input v-model="searchKeyword" placeholder="搜索地点" clearable @keyup.enter.native="searchPlace" />
-                <el-button @click="searchPlace" icon="el-icon-search" style="margin: 0px;">搜索</el-button>
-                <el-button @click="locateToCurrentPosition" icon="el-icon-location" style="margin: 0px;">定位当前位置</el-button>
+                <el-button @click="searchPlace" icon="el-icon-search" style="margin: 0;">搜索</el-button>
+                <el-button @click="locateToCurrentPosition" icon="el-icon-location" style="margin: 0;">定位当前位置</el-button>
               </div>
               
               <!-- 百度地图容器 -->
@@ -259,6 +259,7 @@ export default {
       mapInitialized: false, // 地图初始化状态
       selectedPoint: null,
       selectedAddress: '',   //是否已选择地址
+      isMobile:false,
       newTask: {
         name: "",             // 改为与API一致的字段名
         description: "",
@@ -274,7 +275,6 @@ export default {
         accuracy: "",  // 定位精度（如"100m"）
         mapLoadRetries:0,      //地图加载次数
         circleOverlay: null, // 新增：存储地图上绘制的圆实例
-        isMobile:false
       },
       rules: {
         name: [
@@ -315,7 +315,7 @@ export default {
       let start = (this.managedPage - 1) * this.pageSize;
       let end = start + this.pageSize;
       if(this.allManagedTeams.slice(start, end).length == 0 && this.managedPage > 1){
-        this.ma1 = this.managedPage - 1;
+        this.managedPage = this.managedPage - 1;
         start = start - this.pageSize;
         end = end - this.pageSize;
       }
@@ -458,7 +458,7 @@ export default {
           });
           if(response.data.state == 1){
             this.$message.success('退出团队成功！');
-            this.fetchAllTeams();
+            await this.fetchAllTeams();
           }
           else if(response.data.state == 2){
             this.$message.error('退出团队失败！');
@@ -894,18 +894,18 @@ export default {
 
 .el-dialog--center .el-dialog__body {
     text-align: initial;
-    padding: 25px 25px 0px!important;
+    padding: 25px 25px 0!important;
 }
 
 .el-dialog__body {
-    padding: 30px 20px 0px;
+    padding: 30px 20px 0;
     color: #606266;
     font-size: 14px;
     word-break: break-all;
 }
 
 .dialog-footer {
-    padding: 0px 20px 10px;
+    padding: 0 20px 10px;
     text-align: right;
     box-sizing: border-box;
 }

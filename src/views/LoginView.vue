@@ -48,7 +48,7 @@
             </el-tab-pane>
             <el-tab-pane label="扫码登录" name="saoma-login">
               <!-- 待完善 -->
-                <img src="../../image/QRcode.png" style="left:30px;top:10px;">
+                <img src="../../image/QRcode.png" style="left:30px;top:10px;" alt="二维码">
             </el-tab-pane>
           </el-tabs>
           <p class="register-link">没有账号? <router-link to="/register">去注册</router-link></p>

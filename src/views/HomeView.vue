@@ -24,12 +24,6 @@ export default{
         };
     },
     methods:{
-        JumptoRegister(){
-            this.$router.push('/register');
-        },
-        JumptoLogin(){
-            this.$router.push('/login');
-        }
     }
 }
 </script>
@@ -52,10 +46,7 @@ export default{
     align-items: center;
     
 }*/
-.el-main{
-    width: 500px;
-    height:90vh;
-}
+
 
 
 .logo {

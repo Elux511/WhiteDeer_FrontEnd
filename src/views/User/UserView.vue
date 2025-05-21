@@ -4,10 +4,10 @@
       <el-row :span="1">
         <el-button v-if="isMobile"
               @click="toggleCollapse"
-              :icon="isCollapsed ? 'el-icon-arrow-right' : 'el-icon-arrow-left'"
+              :icon="isCollapsed? 'el-icon-arrow-right' : 'el-icon-arrow-left'"
               circle
               size="small">
-              {{ isCollapsed ? '展开菜单' : '收起菜单' }}
+              {{ isCollapsed? '展开菜单' : '收起菜单' }}
             </el-button>
       </el-row>
       <el-row>
@@ -137,97 +137,128 @@
         activeMenu: 'checkin',
         currentComponent: MyCheckin,
         serverTime: null,
-      timeDiff: 0,
-      loading: true,
-      timer: null,
-      animateSeparator: false,
-      separator: ':',
-      lastSynced: null,
-      faceDialogVisible: false,
-      photoParameter:{
-        mediaStream: null,
-        uploadProgress: 0,
-        imageUrl:'',
-        ImageFile:null,
-        isCaptured:false,
-        showingPicture:false,
-        isCameraWorking:false,
-        cameraDevices: []
-      },
-      
-      isMobile:false,
-      isCollapsed:false
+        timeDiff: 0,
+        loading: true,
+        timer: null,
+        animateSeparator: false,
+        separator: ':',
+        lastSynced: null,
+        faceDialogVisible: false,
+        photoParameter:{
+          mediaStream: null,
+          uploadProgress: 0,
+          imageUrl:'',
+          ImageFile:null,
+          isCaptured:false,
+          showingPicture:false,
+          isCameraWorking:false,
+          cameraDevices: []
+        },
+        isMobile:false,
+        isCollapsed:false, 
+        selectedCameraDeviceId: '', //存储用户选择的摄像头设备ID
       };
     },
     computed: {
-    hours() {
-      if (!this.serverTime) return '00'
-      const hours = this.serverTime.getHours() % 12
-      return hours === 0 ? '12' : hours.toString().padStart(2, '0')
-    },
-    minutes() {
-      if (!this.serverTime) return '00'
-      return this.serverTime.getMinutes().toString().padStart(2, '0')
-    },
-    seconds() {
-      if (!this.serverTime) return '00'
-      return this.serverTime.getSeconds().toString().padStart(2, '0')
-    },
-    period() {
-      if (!this.serverTime) return ''
-      return this.serverTime.getHours() >= 12 ? 'PM' : 'AM'
-    },
-    hourAngle() {
-      if (!this.serverTime) return 0
-      const hours = this.serverTime.getHours() % 12
-      const minutes = this.serverTime.getMinutes()
-      return (hours * 30) + (minutes * 0.5)
-    },
-    minuteAngle() {
-      if (!this.serverTime) return 0
-      const minutes = this.serverTime.getMinutes()
-      const seconds = this.serverTime.getSeconds()
-      return (minutes * 6) + (seconds * 0.1)
-    },
-    secondAngle() {
-      if (!this.serverTime) return 0
-      return this.serverTime.getSeconds() * 6
-    },
-    buttonStyle() {
-      if (this.isMobile) {
-        return {
-          marginLeft: '16%'
-        };
-      } else {
-        return {
-          marginLeft: '30%'
-        };
-      }
-    }
-  },
-  mounted() {
-    const mediaQuery = window.matchMedia('(max-width: 768px)');
-    this.isMobile = mediaQuery.matches;
-    mediaQuery.addEventListener('change', (e) => {
-      this.isMobile = e.matches;
-    });
-    this.checkFace();
-    if(!this.isMobile){
-      this.syncServerTime();
-      // 每秒更新一次时间
-      this.timer = setInterval(() => {
-        if (this.serverTime) {
-          this.serverTime = new Date(Date.now() + this.timeDiff)
-          // 每秒钟切换分隔符的动画状态
-          this.animateSeparator = !this.animateSeparator
+      hours() {
+        if (!this.serverTime) {
+          const localTime = new Date();
+          const hours = localTime.getHours() % 12;
+          return hours === 0? '12' : hours.toString().padStart(2, '0');
         }
-      }, 1000)
-    }
-    this.enumerateCameras();
-  },
-  beforeDestroy() {
-    clearInterval(this.timer)
-  },
+        const hours = this.serverTime.getHours() % 12;
+        return hours === 0? '12' : hours.toString().padStart(2, '0');
+      },
+      minutes() {
+        if (!this.serverTime) {
+          const localTime = new Date();
+          return localTime.getMinutes().toString().padStart(2, '0');
+        }
+        return this.serverTime.getMinutes().toString().padStart(2, '0');
+      },
+      seconds() {
+        if (!this.serverTime) {
+          const localTime = new Date();
+          return localTime.getSeconds().toString().padStart(2, '0');
+        }
+        return this.serverTime.getSeconds().toString().padStart(2, '0');
+      },
+      period() {
+        if (!this.serverTime) {
+          const localTime = new Date();
+          return localTime.getHours() >= 12? 'PM' : 'AM';
+        }
+        return this.serverTime.getHours() >= 12? 'PM' : 'AM';
+      },
+      hourAngle() {
+        if (!this.serverTime) {
+          const localTime = new Date();
+          const hours = localTime.getHours() % 12;
+          const minutes = localTime.getMinutes();
+          return (hours * 30) + (minutes * 0.5);
+        }
+        const hours = this.serverTime.getHours() % 12;
+        const minutes = this.serverTime.getMinutes();
+        return (hours * 30) + (minutes * 0.5);
+      },
+      minuteAngle() {
+        if (!this.serverTime) {
+          const localTime = new Date();
+          const minutes = localTime.getMinutes();
+          const seconds = localTime.getSeconds();
+          return (minutes * 6) + (seconds * 0.1);
+        }
+        const minutes = this.serverTime.getMinutes();
+        const seconds = this.serverTime.getSeconds();
+        return (minutes * 6) + (seconds * 0.1);
+      },
+      secondAngle() {
+        if (!this.serverTime) {
+          const localTime = new Date();
+          return localTime.getSeconds() * 6;
+        }
+        return this.serverTime.getSeconds() * 6;
+      },
+      buttonStyle() {
+        if (this.isMobile) {
+          return {
+            marginLeft: '16%'
+          };
+        } else {
+          return {
+            marginLeft: '30%'
+          };
+        }
+      }
+    },
+    mounted() {
+      const mediaQuery = window.matchMedia('(max-width: 768px)');
+      this.isMobile = mediaQuery.matches;
+      mediaQuery.addEventListener('change', (e) => {
+        this.isMobile = e.matches;
+      });
+      this.checkFace();
+      if(!this.isMobile){
+        this.syncServerTime();
+        // 每秒更新一次时间
+        this.timer = setInterval(() => {
+          if (this.serverTime) {
+            this.serverTime = new Date(Date.now() + this.timeDiff);
+            // 每秒钟切换分隔符的动画状态
+            this.animateSeparator = !this.animateSeparator;
+          } else {
+            // 如果serverTime为空（请求失败使用本地时间），也更新时间显示
+            const localTime = new Date();
+            this.serverTime = localTime;
+            this.animateSeparator =!this.animateSeparator;
+          }
+        }, 1000);
+      }
+      this.enumerateCameras();
+    },
+    beforeDestroy() {
+      clearInterval(this.timer);
+    },
     methods: {
       checkFace(){
         if(!this.$store.getters.getFaceStatus && this.$store.getters.getLoginState){
@@ -239,35 +270,33 @@
         }
       },
       async syncServerTime() {
-      try {
-        // 替换为您的实际服务器时间API
-        const response = await axios.get('http://localhost:8080/api/time');
-        
-        if (!response.ok) {
-          throw new Error(`服务器响应错误: ${response.status}`)
+        try {
+          // 替换为您的实际服务器时间API
+          const response = await axios.get('/api/time');
+          if (response.status === 200) {
+            if (response.data.state == 1) {
+              const serverTimeStr = response.data.data.time;
+              const serverTime = new Date(serverTimeStr).getTime();
+              const clientTime = Date.now();
+              this.timeDiff = serverTime - clientTime;
+              this.serverTime = new Date(serverTime);
+              this.lastSynced = new Date();
+              console.log(`服务器时间同步成功，差值: ${this.timeDiff}ms`);
+            } else if (response.data.state == 2) {
+              this.serverTime = new Date();
+              this.$message && this.$message.error('服务器时间获取失败，使用本地时间');
+            }
+          } else {
+            this.serverTime = new Date();
+            this.$message && this.$message.error('服务器时间获取失败，使用本地时间');
+          }
+        } catch (error) {
+          this.serverTime = new Date();
+          this.$message && this.$message.error('请求发送失败，请检查网络或联系管理员');
+        } finally{
+          this.loading = false;
         }
-        
-        const serverTimeStr = await response.text()
-        const serverTime = new Date(serverTimeStr).getTime()
-        const clientTime = Date.now()
-        
-        this.timeDiff = serverTime - clientTime
-        this.serverTime = new Date(serverTime)
-        this.lastSynced = new Date()
-        this.loading = false
-        
-        console.log(`服务器时间同步成功，差值: ${this.timeDiff}ms`)
-      } catch (error) {
-        console.error('服务器时间同步失败:', error)
-        this.loading = false
-        
-        // 降级使用客户端时间
-        this.serverTime = new Date()
-        
-        // 显示错误提示插眼
-        this.$message && this.$message.error('服务器时间获取失败，使用本地时间')
-      }
-    },
+      },
       handleMenuSelect(key) {
         switch (key) {
           case 'checkin':
@@ -296,7 +325,7 @@
           this.$message.success('注销成功!');
           //Storage.setItem("isLogin",JSON.stringify(false));
           this.$store.commit('Signout');
-          this.$router.push('/login')
+          this.$router.push('/login');
         }).catch(() => {
           this.$message.info('已取消注销');
         });
@@ -344,8 +373,7 @@
         this.startCamera();
       },
       showBlobImage(blobFile) {
-        const objectUrl = URL.createObjectURL(blobFile);
-        this.photoParameter.imageUrl = objectUrl;
+        this.photoParameter.imageUrl = URL.createObjectURL(blobFile);
       },
       // 拍照并转为文件
       async captureImage() {
@@ -371,8 +399,7 @@
               
         // 回显照片到页面上
         try {
-          const objectUrl = URL.createObjectURL(blob);
-          this.photoParameter.imageUrl = objectUrl;
+          this.photoParameter.imageUrl = URL.createObjectURL(blob);
         } catch (error) {
             console.error('创建对象URL失败', error);
           }
@@ -405,13 +432,13 @@
 
         // 上传文件到后端
         resetPhotoParameter(){
-          this.photoParameter.mediaStream = null,
-          this.photoParameter.uploadProgress = 0,
-          this.photoParameter.imageUrl = '',
-          this.photoParameter.ImageFile = null,
-          this.photoParameter.isCaptured = false,
-          this.photoParameter.showingPicture = false,
-          this.photoParameter.isCameraWorking = false
+          this.photoParameter.mediaStream = null;
+          this.photoParameter.uploadProgress = 0;
+          this.photoParameter.imageUrl = '';
+          this.photoParameter.ImageFile = null;
+          this.photoParameter.isCaptured = false;
+          this.photoParameter.showingPicture = false;
+          this.photoParameter.isCameraWorking = false;
         },
         //关闭打卡界面
         close(){
@@ -523,7 +550,7 @@
   height: 170px;
   border-radius: 50%;
   background: #ffffff;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
   padding: 1rem;
 }
 
@@ -640,8 +667,8 @@ button{
 }
 
 .el-dialog__footer {
-  padding: 0px;
-  margin:0px;
+  padding: 0;
+  margin:0;
 }
 
 .button-normal {

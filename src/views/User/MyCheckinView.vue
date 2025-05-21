@@ -124,6 +124,7 @@ export default {
       locationError: null, // 存储位置获取的错误信息
       locationSuccess:true,
       isLoading:true,
+      isMobile:false,
       cameraDebounceTimer: null  //防抖
     };
   },
@@ -225,7 +226,7 @@ export default {
                   const response = await axios.post(`/api/checkin?id=${id}`,formData);
                 if(response.data.state == 1){
                   this.$message.success('打卡成功!');
-                  this.fetchTasks();
+                  await this.fetchTasks();
                 }
                 else if(response.data.state == 3){
                   this.$message.error('打卡失败：位置校验未通过!');
@@ -315,10 +316,6 @@ export default {
       this.photoParameter.showingPicture = false;
       this.startCamera();
     },
-    showBlobImage(blobFile) {
-      const objectUrl = URL.createObjectURL(blobFile);
-      this.photoParameter.imageUrl = objectUrl;
-    },
     // 拍照并转为文件
     async captureImage() {
       if(!this.photoParameter.isCameraWorking) {
@@ -343,8 +340,7 @@ export default {
             
       // 回显照片到页面上
       try {
-        const objectUrl = URL.createObjectURL(blob);
-        this.photoParameter.imageUrl = objectUrl;
+        this.photoParameter.imageUrl = URL.createObjectURL(blob);
       } catch (error) {
           console.error('创建对象URL失败', error);
         }
@@ -366,7 +362,7 @@ export default {
                 });
                 if(response.data.state == 1){
                   this.$message.success('打卡成功!');
-                  this.fetchTasks();
+                  await this.fetchTasks();
                   this.close();
                 }
                 else if(response.data.state == 2){
@@ -386,13 +382,13 @@ export default {
             }
     },
         resetPhotoParameter(){
-          this.photoParameter.mediaStream = null,
-          this.photoParameter.uploadProgress = 0,
-          this.photoParameter.imageUrl = '',
-          this.photoParameter.ImageFile = null,
-          this.photoParameter.isCaptured = false,
-          this.photoParameter.showingPicture = false,
-          this.photoParameter.isCameraWorking = false
+          this.photoParameter.mediaStream = null;
+          this.photoParameter.uploadProgress = 0;
+          this.photoParameter.imageUrl = '';
+          this.photoParameter.ImageFile = null;
+          this.photoParameter.isCaptured = false;
+          this.photoParameter.showingPicture = false;
+          this.photoParameter.isCameraWorking = false;
         },
         //关闭打卡界面
         close(){
@@ -503,9 +499,7 @@ span{
     height:30px;
     margin-right: 3vh;
 }
-.el-container{
-    display: flex;
-}
+
 .el-main{
     /*flex-grow: 1;*/
     width:80vh;
@@ -540,8 +534,8 @@ span{
 
 
 .el-dialog__footer {
-  padding: 0px;
-  margin:0px;
+  padding: 0;
+  margin:0;
 }
 
 .task-checkin-type{
@@ -552,7 +546,7 @@ span{
 
 .task-checkin-type span {
     white-space: nowrap;
-    margin: 0px;
+    margin: 0;
 }
 
 .pagination-container {

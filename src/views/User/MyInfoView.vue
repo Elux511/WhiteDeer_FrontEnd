@@ -243,7 +243,7 @@ export default {
             if(response.data.state == 1){
               this.$message.success('修改成功！');
               this.cancleChangePassword();
-              this.fetchUserInfo();
+              await this.fetchUserInfo();
             }
             else if(response.data.state == 2){
               this.$message.error('修改密码失败，请稍后重试');
@@ -312,7 +312,7 @@ export default {
           if(response.data.state == 1){
             this.$message.success('修改成功！');
             this.cancleChangePhone();
-            this.fetchUserInfo();
+            await this.fetchUserInfo();
           }
           else if(response.data.state == 2){
             this.$message.error('该手机号已绑定其他账号！');
@@ -422,8 +422,7 @@ export default {
             this.stopCamera(); // 页面销毁时自动关闭摄像头
         },
         showBlobImage(blobFile) {
-            const objectUrl = URL.createObjectURL(blobFile);
-            this.photoParameter.imageUrl = objectUrl;
+            this.photoParameter.imageUrl = URL.createObjectURL(blobFile);
         },
         // 拍照并转为文件
         async captureImage() {
@@ -449,8 +448,7 @@ export default {
             
             // 回显照片到页面上
             try {
-                const objectUrl = URL.createObjectURL(blob);
-                this.photoParameter.imageUrl = objectUrl;
+                this.photoParameter.imageUrl = URL.createObjectURL(blob);
             } catch (error) {
                 console.error('创建对象URL失败', error);
             }
@@ -469,7 +467,7 @@ export default {
             });
             if(response.data.state == 1){
               this.$message.success('上传成功！');
-              this.fetchUserInfo();
+              await this.fetchUserInfo();
               this.closeChangePhotoDialog();
             }
             else if(response.data.state == 2){
@@ -485,13 +483,13 @@ export default {
         },
 
         resetPhotoParameter(){
-          this.photoParameter.mediaStream = null,
-          this.photoParameter.uploadProgress = 0,
-          this.photoParameter.imageUrl = '',
-          this.photoParameter.ImageFile = null,
-          this.photoParameter.isCaptured = false,
-          this.photoParameter.showingPicture = false,
-          this.photoParameter.isCameraWorking = false
+          this.photoParameter.mediaStream = null;
+          this.photoParameter.uploadProgress = 0;
+          this.photoParameter.imageUrl = '';
+          this.photoParameter.ImageFile = null;
+          this.photoParameter.isCaptured = false;
+          this.photoParameter.showingPicture = false;
+          this.photoParameter.isCameraWorking = false;
         },
         deleteUser(){
           this.$confirm('此操作将删除此账号所有信息，是否继续?', '⚠警告！', {
@@ -505,7 +503,7 @@ export default {
                 this.$message.success('删除账号成功，自动返回首页');
                 //sessionStorage.setItem("isLogin",JSON.stringify(false));
                 this.$store.commit('Signout');
-                this.$router.push('/login');
+                await this.$router.push('/login');
                 //插眼
                 //sessionStorage.setItem("isLogin",false);
               }
@@ -602,7 +600,7 @@ export default {
 
 .verification{
   display: flex;
-  margin: 10px 0px;
+  margin: 10px 0;
 }
 
 
@@ -654,8 +652,8 @@ export default {
 }
 
 .el-dialog__footer {
-  padding: 0px;
-  margin:0px;
+  padding: 0;
+  margin:0;
 }
 
 
