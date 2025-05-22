@@ -48,15 +48,15 @@
           <el-button type="primary" @click="createTeamParameter.createTeamDialogVisible = true" style="margin: 5px 10px 5px 10px;">创建我的团队</el-button>
         </div>
       </div>
-      <el-dialog title="创建团队" :visible.sync="createTeamParameter.createTeamDialogVisible" width="30%" center>
+      <el-dialog title="创建团队" :visible.sync="createTeamParameter.createTeamDialogVisible" width="30%" center class="mobileDialog">
           <el-form>
-            <el-form-item label="请输入团队名称(不超过10个字符)：">
+            <el-form-item label="请输入团队名称(长度不超过10):">
               <el-input v-model="createTeamParameter.groupName"></el-input>
             </el-form-item>
-            <el-form-item label="请输入团队人数上限(1-500)：">
+            <el-form-item label="请输入团队人数上限(1-500):">
               <el-input-number v-model="createTeamParameter.groupNumberMaximum" :min="1" :max="500"></el-input-number>
             </el-form-item>
-            <el-form-item label="请输入团队简介(100字符以内)：">
+            <el-form-item label="请输入团队简介(100字符以内):">
               <el-input v-model="createTeamParameter.groupIntroduction"></el-input>
             </el-form-item>
           </el-form>
@@ -304,5 +304,12 @@ export default {
   .team-search-container {
     padding: 0;
   }
+
+
+  .mobileDialog{
+    margin-left: -90%;
+    margin-right: -90%;
+  }
+
 }
 </style>

@@ -44,8 +44,8 @@
         <span>{{ managedPage }}/{{ managedTotalPages }}</span>
         <el-button size="mini" @click="managedPage < managedTotalPages ? managedPage++ : null">下一页</el-button>
       </div>
-      
-      <el-dialog title="团队详情" :visible.sync="groupInfoDialogVisible" width="85%" style="margin-top:-5%" center>
+      <!--PC端-->
+      <el-dialog v-if="!isMobile" title="团队详情" :visible.sync="groupInfoDialogVisible" width="85%" style="margin-top:-5%" center>
         <div style="display: flex; width: 100%; gap:50px;">
           <div style="text-align: center;"><!-- 原团队成员信息表格，调整宽度 -->
             <h3 >团队成员信息</h3>
@@ -129,7 +129,94 @@
         </span>
       </el-dialog>
       
-      <el-dialog name="发布打卡任务" :visible.sync="postTaskDialogVisible" width="55%" center style="margin-top:-5%; padding:0">
+      <!--移动端-->
+      <el-dialog v-if="isMobile" title="团队详情" :visible.sync="groupInfoDialogVisible" width="100%" style="margin-top:-5%" center class="mobileDetailsDialog">
+        <el-tabs v-model="activeTab" type="card">
+          <el-tab-pane label="团队成员" name="member">
+            <div style="text-align: center;"><!-- 原团队成员信息表格，调整宽度 -->
+              <el-table :data="currentPageMembers" style="width: 100%;">
+                  <el-table-column prop="name" label="昵称" width="80" align="center" style="padding: 0;"></el-table-column>
+                  <el-table-column prop="id" label="账号" width="95" align="center"></el-table-column>
+                  <el-table-column prop="phoneNumber" label="手机号" width="120" align="center"></el-table-column>
+                  <el-table-column label="操作" width="100" align="center">
+                    <template #default="scope">
+                      <el-button type="text" @click="removeMember(scope.row)">移出团队</el-button>
+                    </template>
+                  </el-table-column>
+              </el-table>
+              <div class="pagination">
+                <el-button @click="prevMemberPage" :disabled="memberCurrentPage === 1">上一页</el-button>
+                <span>{{ memberCurrentPage }}</span> /
+                <span>{{ totalMemberPages }}</span>
+                <el-button @click="nextMemberPage" :disabled="memberCurrentPage === totalMemberPages">下一页</el-button>
+              </div>
+            </div>
+          </el-tab-pane>
+          <el-tab-pane label="打卡任务" name="tasks">
+            <div style="text-align: center;"><!-- 新增的打卡任务表格 -->
+              <el-table :data="currentPageTasks" style="width: 100%;" >
+                <el-table-column prop="name" label="任务名称" width="80" align="center"></el-table-column>
+                <el-table-column prop="id" label="编号" width="75" align="center"></el-table-column>
+                <el-table-column label="完成情况" width="60" align="center">
+                  <template #default="scope">
+                    <span>{{ scope.row.actualCount }}/{{ scope.row.shouldCount }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="200" align="center">
+                    <template #default="scope">
+                      <el-button type="text" @click="getTaskDetail(scope.row)">查看详情</el-button>
+                      <el-button type="text" @click="deleteTask(scope.row)">删除</el-button>
+                    </template>
+                </el-table-column>
+              </el-table>
+              <div class="pagination">
+                <el-button @click="prevTaskPage" :disabled="taskCurrentPage === 1">上一页</el-button>
+                <span>{{ taskCurrentPage }}</span> /
+                <span>{{ totalTaskPages }}</span>
+                <el-button @click="nextTaskPage" :disabled="taskCurrentPage === totalTaskPages">下一页</el-button>
+              </div>
+            </div>
+          </el-tab-pane>
+          <el-dialog width="90%" title="打卡任务详细信息" :visible.sync="taskDetailsDialogVisible" append-to-body center>
+            <div class="task-detail-container">
+              <p class="task-item">
+                <span class="task-label">任务名称：</span>
+                <span class="task-value">{{ taskDetails.name }}</span>
+              </p>
+              <p class="task-item">
+                <span class="task-label">任务描述：</span>
+                <span class="task-value">{{ taskDetails.description }}</span>
+              </p>
+              <p class="task-item">
+                <span class="task-label">开始时间：</span>
+                <span class="task-value">{{ taskDetails.beginTime }}</span>
+              </p>
+              <p class="task-item">
+                <span class="task-label">结束时间：</span>
+                <span class="task-value">{{ taskDetails.endTime }}</span>
+              </p>
+              <p class="task-item">
+                <span class="task-label">已打卡成员：</span>
+                <span class="task-value">{{ taskDetails.completedNameList.join(', ') }}</span>
+              </p>
+              <p class="task-item">
+                <span class="task-label">未打卡成员：</span>
+                <span class="task-value">{{ taskDetails.incompleteNameList.join(', ') }}</span>
+              </p>
+              <p class="task-item">
+                <span class="task-label">任务类型：</span>
+                <span class="task-value">{{ taskDetails.type === '都' ? '人脸识别 + 定位打卡' : taskDetails.type }}</span>
+              </p>
+            </div>
+          </el-dialog>
+        </el-tabs>
+        <span slot="footer" class="dialog-footer">
+            <el-button type="primary" @click="closeTeamMember">退 出</el-button>
+        </span>
+      </el-dialog>
+
+
+      <el-dialog title="发布打卡任务" :visible.sync="postTaskDialogVisible" width="55%" center style="margin-top:-5%; padding:0" class="mobileDialog">
         <el-form ref="taskFormRef" :model="newTask" :rules="rules" label-width="100px" size="small" > 
           <el-form-item label="任务名称" prop="name">
             <el-input v-model="newTask.name" placeholder="请输入任务名称" />
@@ -157,7 +244,7 @@
                 valueFormat: 'yyyy-MM-dd HH:mm'
               }"
             />
-            <span class="mx-2">至</span>
+            <span class="mx-2" v-if="!isMobile">至</span>
             <el-date-picker
               v-model="newTask.endTime"
               type="datetime"
@@ -172,12 +259,18 @@
           
           <!-- 定位设置 - 集成地图选择 -->
             <el-form-item label="定位设置" v-if="newTask.checkinType.includes('定位打卡')">
-              <div class="map-search-container">
+              <div class="map-search-container" v-if="!isMobile">
                 <el-input v-model="searchKeyword" placeholder="搜索地点" clearable @keyup.enter.native="searchPlace" />
                 <el-button @click="searchPlace" icon="el-icon-search" style="margin: 0;">搜索</el-button>
                 <el-button @click="locateToCurrentPosition" icon="el-icon-location" style="margin: 0;">定位当前位置</el-button>
               </div>
-              
+              <div class="mobile-map-search-container" v-if="isMobile">
+                <el-button @click="locateToCurrentPosition" icon="el-icon-location" style="margin:0 20%;">定位当前位置</el-button>
+                <div style="display: flex; margin-left: -10%;">
+                  <el-input v-model="searchKeyword" placeholder="搜索地点" clearable @keyup.enter.native="searchPlace" />
+                  <el-button @click="searchPlace" icon="el-icon-search" style="margin: 0;">搜索</el-button>
+                </div>
+              </div>
               <!-- 百度地图容器 -->
               <div class="map-container" style="max-height: 250px;max-width: 460px;">
                 <!-- 确保地图容器有唯一ID -->
@@ -187,16 +280,22 @@
                   <span v-else class="text-gray-400">请在地图上选择打卡位置</span>
                 </div>
               </div>
+              <div class="mobileRadioGroup">
               打卡精度选择：
-              <el-radio-group v-model="newTask.accuracy" @change="drawCircle(selectedPoint ? new window.BMap.Point(selectedPoint.lng, selectedPoint.lat) : null)">
-                <el-radio label="50m">50米</el-radio>
-                <el-radio label="100m">100米</el-radio>
-                <el-radio label="200m">200米</el-radio>
-                <el-radio label="500m">500米</el-radio>
+              <el-radio-group 
+              v-model="newTask.accuracy" 
+              @change="drawCircle(selectedPoint ? new window.BMap.Point(selectedPoint.lng, selectedPoint.lat) : null)"
+              style="width: 100%; text-align: center;"
+              >
+                <el-radio label="50m" style="margin-right: 5%;">50米</el-radio>
+                <el-radio label="100m" style="margin-right: 5%;">100米</el-radio>
+                <el-radio label="200m" style="margin-right: 5%;">200米</el-radio>
+                <el-radio label="500m" style="margin-right: 5%;">500米</el-radio>
               </el-radio-group>
+              </div>
             </el-form-item>
 
-          <el-form-item label="二维码设置">
+          <el-form-item label="二维码">
             <el-switch
               v-model="newTask.isQRcode"
               active-text="启用"
@@ -220,6 +319,7 @@ import axios from 'axios';
 export default {
   data() {
     return {
+      activeTab:'member',
       //查看打卡详情
       taskDetails:{
         "id": 221112,
@@ -241,7 +341,6 @@ export default {
       joinedPage: 1,
       managedPage: 1,
       pageSize: 3, // 每页显示3条数据
-      //isLoading: false,
       memberList: [], // 存储当前页要展示的成员信息
       memberCurrentPage: 1, // 当前成员信息列表的页码
       memberPageSize: 4, // 每页显示的成员数量
@@ -897,12 +996,7 @@ export default {
     padding: 25px 25px 0!important;
 }
 
-.el-dialog__body {
-    padding: 30px 20px 0;
-    color: #606266;
-    font-size: 14px;
-    word-break: break-all;
-}
+
 
 .dialog-footer {
     padding: 0 20px 10px;
@@ -992,6 +1086,77 @@ export default {
     padding: 0;
     min-height: 600px;
   }
+  .mobileDialog{
+    top: -10%;
+    margin-left: -37%;
+    margin-right: -37%;
+    padding: 0;
+  }
+
+  .map-container {
+    margin-top: 10px;
+    margin-left: -30%;
+    border: 1px solid #ebeef5;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .bm-view {
+    height: 200px;
+  }
+  .mobile-map-search-container {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .selected-address {
+    padding: 4px;
+    background-color: #f5f7fa;
+    border-top: 1px solid #ebeef5;
+    font-size: 14px;
+  }
+
+  .mobileRadioGroup{
+    margin-left: -30%;
+    right:10%
+  }
+
+  .mobileDetailsDialog{
+    margin-left: 3%;
+    margin-right: 3%;
+  }
+
+
 }
+</style>
+<style>
+  @media (max-width: 768px) {
+    .el-dialog__body{
+      padding-left: 4%!important;
+      padding-top: 3%!important;
+      padding-bottom: 0!important;
+    }
+
+    .el-message-box {
+      display: inline-block;
+      width: 80%!important;
+      padding-bottom: 10px;
+      vertical-align: middle;
+      background-color: #FFF;
+      border-radius: 4px;
+      border: 1px solid #EBEEF5;
+      font-size: 18px;
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .1);
+      text-align: left;
+      overflow: hidden;
+      backface-visibility: hidden;
+    }
+  }
+  .el-dialog__footer{
+      padding-top: 0!important;
+  }
+  .el-dialog__body{
+    padding-top: 3%!important;
+    padding-bottom: 3%!important;
+  }
+
 </style>
 

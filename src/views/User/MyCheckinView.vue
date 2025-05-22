@@ -56,7 +56,7 @@
           <span>{{ totalPages }}</span>
           <el-button @click="nextPage" :disabled="currentPage === totalPages">下一页</el-button>
         </div>
-        <el-dialog title="上传照片" :visible.sync="checkinDialogVisible" width="55%" style="margin-top:-5%" center custom-class="custom-checkin-dialog">
+        <el-dialog title="上传照片" :visible.sync="checkinDialogVisible" width="55%" style="margin-top:-5%" center custom-class="custom-checkin-dialog" class="mobileFaceDialog">
           <div style="display: flex;">
             <div v-if="photoParameter.cameraDevices.length > 1">
               选择调用的摄像头设备：<el-select v-model="selectedCameraDeviceId" placeholder="选择摄像头">
@@ -69,7 +69,7 @@
               </el-select>
             </div>
             <div>
-              <h3>注意：当照片出现多张人脸时只识别最大的人脸</h3>
+              <h3 style="margin-left: 3%;">注意：当照片出现多张人脸时只识别最大的人脸</h3>
             </div>
           </div>
           <div class="video-container">
@@ -82,7 +82,7 @@
             <button v-if="!photoParameter.showingPicture" @click="captureImage">拍照</button>
             <button v-if="photoParameter.isCaptured" @click="submitImage">提交</button>
             <button v-if="photoParameter.showingPicture" @click="startAgain">重拍</button>
-            <progress :value="photoParameter.uploadProgress" max="100" v-if="photoParameter.uploadProgress > 0"></progress>
+            <progress :value="photoParameter.uploadProgress" max="100" v-if="!isMobile && photoParameter.uploadProgress > 0"></progress>
           </div>
           <span slot="footer" class="dialog-footer">
             <el-button type="primary" @click="close">关 闭</el-button>
@@ -580,10 +580,29 @@ span{
     align-items: center;
   }
 
-.pagination-container {
+  .pagination-container {
     text-align: center;
     margin-top: 0;
-}
+  }
+
+  .mobileFaceDialog{
+    margin-left: -35%;
+    margin-right: -35%;
+  }
+
+    .button-container {
+    display: flex;
+    flex-direction:row;
+    justify-content: center;
+    background-color: rgb(210, 228, 235);
+    margin-left:5%;
+    margin-right:0;
+  }
+  .button-container button {
+      width:auto;
+      height:30px;
+      margin-right: 1vh;
+  }
 }
 
 

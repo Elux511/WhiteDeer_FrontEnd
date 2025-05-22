@@ -2,13 +2,19 @@
   <div>
     <div class="user-view-container">
       <el-row :span="1">
-        <el-button v-if="isMobile"
+        <div style="display: flex;" v-if="isMobile">
+          <el-button
               @click="toggleCollapse"
               :icon="isCollapsed? 'el-icon-arrow-right' : 'el-icon-arrow-left'"
               circle
               size="small">
               {{ isCollapsed? '展开菜单' : '收起菜单' }}
-            </el-button>
+          </el-button>
+          <div class="logo-container">
+            <h2 style="margin-top: 0;">白鹿打卡</h2>
+            <img src="../../../image/bailuLOGO1.png" alt="标志图" class="logo-image" :style="logoStyle">
+          </div>
+        </div>
       </el-row>
       <el-row>
         <!-- 左侧导航栏 -->
@@ -678,8 +684,11 @@ button{
   margin: 11%;
 }
 
+
+
 @media (max-width: 768px){
   .user-view-sider{
+    padding-top: 0;
     position:absolute;
     z-index: 100;
     background-color: #fff;
@@ -688,6 +697,22 @@ button{
   }
   .user-view-sider.collapsed{
     max-width: 10px;
+  }
+
+
+  .logo-image {
+    margin-left: 20%;
+    width: 40px;        /* 设置固定宽度 */
+    height: 50px;       /* 设置固定高度 */
+    object-fit: cover;  /* 控制图片如何适应容器 */
+  }
+
+  .logo-container{
+    width:70%;
+    display: flex;
+    position: absolute;
+    margin-left: 37%;
+    padding: 0;
   }
 }
 

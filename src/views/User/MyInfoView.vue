@@ -9,7 +9,7 @@
         <span class="label" v-if="isMobile" style="width:50px">账号:</span>
         <span class="value">{{ userInfo.id }}</span>
         <el-button type="text" @click="changePasswordDialogVisible = true" class="button-margin">修改密码</el-button>
-        <el-dialog title="修改密码" :visible.sync="changePasswordDialogVisible" width="30%" center>
+        <el-dialog title="修改密码" :visible.sync="changePasswordDialogVisible" width="30%" center class="mobileDialog">
           <el-form>
             <el-form-item label="请输入原密码:">
               <el-input v-model="originPassword" prefix-icon="el-icon-lock" show-password></el-input>
@@ -32,7 +32,7 @@
         <span class="label">用户名:</span>
         <span class="value">{{ userInfo.name }}</span>
         <el-button type="text" @click="changeNameDialogVisible = true" class="button-margin">更换用户名</el-button>
-        <el-dialog title="修改用户名" :visible.sync="changeNameDialogVisible" width="30%" center>
+        <el-dialog title="修改用户名" :visible.sync="changeNameDialogVisible" width="30%" center class="mobileDialog">
           <el-form>
             <el-form-item label="请输入新用户名：">
               <el-input v-model="updateName"></el-input>
@@ -49,7 +49,7 @@
         <span class="label">手机号:</span>
         <span class="value">{{ userInfo.phoneNumber }}</span>
         <el-button type="text" @click="changePhoneDialogVisible = true" class="button-margin">更换手机号</el-button>
-        <el-dialog title="修改手机号" :visible.sync="changePhoneDialogVisible" width="30%" center>
+        <el-dialog title="修改手机号" :visible.sync="changePhoneDialogVisible" width="30%" center style="margin-left: -90%; margin-right: -90%;">
           <el-input placeholder="请输入新手机号" v-model="updatePhone"></el-input>
           <div class="verification">
             <el-input placeholder="请输入验证码" v-model="verificationCode"></el-input>
@@ -75,7 +75,7 @@
           <span v-if="this.$store.getters.getFaceStatus">更换照片</span>
           <span v-else>上传照片</span>
         </el-button>
-        <el-dialog title="修改照片" :visible.sync="changePhotoDialogVisible" width="55%" style="margin-top:-5%" center>
+        <el-dialog title="修改照片" :visible.sync="changePhotoDialogVisible" width="55%" style="margin-top:-5%" center class="mobileFaceDialog">
           <div style="display: flex;">
             <div v-if="photoParameter.cameraDevices.length > 1">
               选择调用的摄像头设备：<el-select v-model="selectedCameraDeviceId" placeholder="选择摄像头">
@@ -87,8 +87,9 @@
                 ></el-option>
               </el-select>
             </div>
-            <div>
-              <h3>注意：当照片出现多张人脸时只识别最大的人脸</h3>
+            <div style="margin-left: 10px;">
+              <h3 v-if="!isMobile">注意：当照片出现多张人脸时只识别最大的人脸</h3>
+              <h4 v-if="isMobile">注意：当照片出现多张人脸时只识别最大的人脸</h4>
             </div>
           </div>
             <div class="video-container">
@@ -101,7 +102,7 @@
               <button v-if="!photoParameter.showingPicture" @click="captureImage">拍照</button>
               <button v-if="photoParameter.isCaptured" @click="submitImage">提交</button>
               <button v-if="photoParameter.showingPicture" @click="startAgain">重拍</button>
-              <progress :value="photoParameter.uploadProgress" max="100" v-if="photoParameter.uploadProgress > 0"></progress>
+              <progress :value="photoParameter.uploadProgress" max="100" v-if="!isMobile && photoParameter.uploadProgress > 0"></progress>
             </div>
           <span slot="footer" class="dialog-footer">
             <el-button type="primary" @click="closeChangePhotoDialog">关 闭</el-button>
@@ -734,6 +735,30 @@ export default {
     display: flex;
     justify-content: center;
     align-items: center;
+  }
+
+  .mobileDialog{
+    margin-left: -80%;
+    margin-right: -80%;
+  }
+
+  .mobileFaceDialog{
+    margin-left: -40%;
+    margin-right: -40%;
+  }
+
+  .button-container {
+    display: flex;
+    flex-direction:row;
+    justify-content: center;
+    background-color: rgb(210, 228, 235);
+    margin-left:0;
+    margin-right:0;
+  }
+  .button-container button {
+      width:auto;
+      height:30px;
+      margin-right: 1vh;
   }
 }
 </style>    
